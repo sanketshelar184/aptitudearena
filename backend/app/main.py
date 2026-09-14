@@ -18,9 +18,20 @@ app = FastAPI(
     docs_url=f"{settings.api_v1_prefix}/docs",
 )
 
+cors_origins = list(settings.cors_origins)
+for default_origin in [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://aptitudearena.in",
+    "https://www.aptitudearena.in",
+]:
+    if default_origin not in cors_origins:
+        cors_origins.append(default_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],

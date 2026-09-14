@@ -1,3 +1,4 @@
+# Environment and local data
 # Environment and secrets
 .env
 .env.*
@@ -14,6 +15,7 @@ postgres-data/
 *.sqlite
 *.sqlite3
 
+# JavaScript
 # Dependencies & Build artifacts
 node_modules/
 frontend/node_modules/
@@ -37,6 +39,7 @@ htmlcov/
 venv/
 ENV/
 
+# Editors and OS
 # IDE & OS
 .DS_Store
 Thumbs.db
