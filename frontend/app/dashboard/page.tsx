@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { getStudentDashboard, studentLogout } from "@/lib/api";
 import { StudentDashboardData } from "@/types/commerce";
+import Navbar from "@/components/Navbar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -84,6 +85,7 @@ export default function DashboardPage() {
             <div className="h-6 w-20 bg-slate-200 rounded animate-pulse" />
           </div>
         </nav>
+        <Navbar />
         <div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-pulse">
           <div className="h-8 w-64 bg-slate-200 rounded" />
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -149,6 +151,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </nav>
+      <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
         {/* Welcome Header */}

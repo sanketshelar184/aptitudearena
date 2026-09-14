@@ -20,6 +20,7 @@ import {
 import { getAttemptResult } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { AttemptReview } from "@/types/test";
+import Navbar from "@/components/Navbar";
 
 function ResultPageContent() {
   const params = useParams<{ attemptId: string }>();
@@ -116,6 +117,7 @@ function ResultPageContent() {
           </div>
         </div>
       </nav>
+      <Navbar />
 
       <div className="mx-auto max-w-5xl px-6 py-10">
         {/* Hero Score Card */}

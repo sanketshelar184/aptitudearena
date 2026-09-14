@@ -18,6 +18,7 @@ import {
 import { getProducts, createPaymentOrder, verifyPayment } from "@/lib/api";
 import { getToken, getUser } from "@/lib/auth";
 import { Product, CreateOrderResponse } from "@/types/commerce";
+import Navbar from "@/components/Navbar";
 
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -202,6 +203,7 @@ export default function PricingPage() {
           </div>
         </div>
       </nav>
+      <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-12">
         {/* Page Hero */}

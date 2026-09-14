@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Brain,
 } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 export const metadata = {
   title: "AptitudeArena — Practice Faster. Score Better. Crack Placements.",
@@ -182,6 +183,7 @@ export default function LandingPage() {
           </div>
         </div>
       </header>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-12 pb-16 sm:pt-20 sm:pb-24">

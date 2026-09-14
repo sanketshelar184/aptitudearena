@@ -14,6 +14,7 @@ import {
 import { getPublishedTests, startTest } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { Test } from "@/types/test";
+import Navbar from "@/components/Navbar";
 
 export default function TestsCatalogPage() {
   const router = useRouter();
@@ -83,6 +84,7 @@ export default function TestsCatalogPage() {
           </div>
         </div>
       </nav>
+      <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
         {/* Page Hero */}

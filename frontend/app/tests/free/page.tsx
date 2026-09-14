@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { getFreeTestInfo, startFreeTest } from "@/lib/api";
 import { FreeTestInfoResponse } from "@/types/test";
+import Navbar from "@/components/Navbar";
 
 export default function FreeTestPage() {
   const router = useRouter();
@@ -60,6 +61,7 @@ export default function FreeTestPage() {
           </Link>
         </div>
       </nav>
+      <Navbar />
 
       <div className="mx-auto flex-1 w-full max-w-3xl px-6 py-12">
         <div className="text-center">
