@@ -16,7 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { getProducts, createPaymentOrder, verifyPayment } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getToken, getUser } from "@/lib/auth";
 import { Product, CreateOrderResponse } from "@/types/commerce";
 
 const loadRazorpayScript = (): Promise<boolean> => {
@@ -73,9 +73,13 @@ export default function PricingPage() {
       if (!order.is_mock_mode) {
         const isLoaded = await loadRazorpayScript();
         if (isLoaded && typeof window !== "undefined" && (window as unknown as { Razorpay: unknown }).Razorpay) {
+          const currentUser = getUser();
           const RazorpayClient = (
             window as unknown as {
-              Razorpay: new (options: unknown) => { open: () => void };
+              Razorpay: new (options: unknown) => {
+                open: () => void;
+                on: (event: string, callback: (resp: unknown) => void) => void;
+              };
             }
           ).Razorpay;
           const rzp = new RazorpayClient({
@@ -85,6 +89,17 @@ export default function PricingPage() {
             name: "AptitudeArena",
             description: order.product_name,
             order_id: order.order_id,
+            prefill: {
+              name: currentUser?.full_name || "",
+              email: currentUser?.email || "",
+            },
+            theme: { color: "#2563eb" },
+            modal: {
+              ondismiss: () => {
+                setIsOrdering(false);
+                setActiveOrder(null);
+              },
+            },
             handler: async (response: {
               razorpay_order_id: string;
               razorpay_payment_id: string;
@@ -108,7 +123,11 @@ export default function PricingPage() {
                 setIsVerifying(false);
               }
             },
-            theme: { color: "#2563eb" },
+          });
+          rzp.on("payment.failed", (response: unknown) => {
+            const errResp = response as { error?: { description?: string } };
+            setModalError(errResp?.error?.description || "Payment was not completed or was cancelled.");
+            setIsVerifying(false);
           });
           rzp.open();
           setIsOrdering(false);
