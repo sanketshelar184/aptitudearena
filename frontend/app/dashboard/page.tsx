@@ -79,12 +79,6 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-slate-50 font-sans text-ink">
-        <nav className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <span className="text-base font-bold text-ink">AptitudeArena</span>
-            <div className="h-6 w-20 bg-slate-200 rounded animate-pulse" />
-          </div>
-        </nav>
         <Navbar />
         <div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-pulse">
           <div className="h-8 w-64 bg-slate-200 rounded" />
@@ -121,36 +115,6 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
-      {/* Top Navbar */}
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white font-black text-xs">
-                AA
-              </span>
-              <span className="text-base font-black tracking-tight text-ink">
-                Aptitude<span className="text-brand">Arena</span>
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <Link href="/tests" className="text-slate-600 hover:text-ink transition">
-              Test Catalog
-            </Link>
-            <Link href="/pricing" className="text-slate-600 hover:text-ink transition">
-              Pricing
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 hover:bg-slate-50 transition"
-            >
-              <LogOut size={13} />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </nav>
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">

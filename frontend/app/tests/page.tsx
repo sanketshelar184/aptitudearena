@@ -59,31 +59,6 @@ export default function TestsCatalogPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
-      {/* Header */}
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-xl font-bold tracking-tight text-ink">
-            AptitudeArena
-          </Link>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <Link href="/pricing" className="text-slate-600 hover:text-brand transition">
-              Pricing
-            </Link>
-            <Link href="/dashboard" className="text-slate-600 hover:text-brand transition">
-              Dashboard
-            </Link>
-            <Link href="/tests/free" className="text-brand hover:underline">
-              Free Diagnostic Test
-            </Link>
-            <Link
-              href="/admin/login"
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50 transition"
-            >
-              Admin Portal
-            </Link>
-          </div>
-        </div>
-      </nav>
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10">

@@ -149,40 +149,6 @@ const faqs = [
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-ink">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white font-black text-sm shadow-xs">
-              AA
-            </span>
-            <span className="text-base font-black tracking-tight text-ink">
-              Aptitude<span className="text-brand">Arena</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            <Link
-              href="/pricing"
-              className="hidden sm:inline-flex px-3.5 py-2 font-semibold text-slate-600 hover:text-ink transition"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/login"
-              className="px-3.5 py-2 font-semibold text-slate-700 hover:text-ink transition"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/tests/free"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 font-bold text-white shadow-xs hover:bg-blue-700 transition"
-            >
-              <span>Free Test</span>
-              <ArrowRight size={13} />
-            </Link>
-          </div>
-        </div>
-      </header>
       <Navbar />
 
       {/* Hero Section */}
