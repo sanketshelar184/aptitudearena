@@ -238,6 +238,7 @@ def start_or_resume_free_test(
                         option_c=q.option_c,
                         option_d=q.option_d,
                         selected_answer=ans.selected_answer,
+                        difficulty=q.difficulty,
                     )
                     for ans, q in ordered_items
                 ],
@@ -274,6 +275,7 @@ def start_or_resume_free_test(
                 option_b=q.option_b,
                 option_c=q.option_c,
                 option_d=q.option_d,
+                difficulty=q.difficulty,
             )
             for idx, q in enumerate(questions, start=1)
         ],
@@ -340,6 +342,7 @@ def start_test(
                 option_b=q.option_b,
                 option_c=q.option_c,
                 option_d=q.option_d,
+                difficulty=q.difficulty,
             )
             for idx, q in enumerate(questions, start=1)
         ],
@@ -450,6 +453,7 @@ def get_attempt_for_taking(
                 option_c=q.option_c,
                 option_d=q.option_d,
                 selected_answer=ans.selected_answer,
+                difficulty=q.difficulty,
             )
             for ans, q in ordered_items
         ],

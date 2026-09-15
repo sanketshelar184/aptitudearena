@@ -187,6 +187,22 @@ export default function PricingPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
+      {/* Navbar */}
+      <nav className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link href="/" className="text-xl font-bold tracking-tight text-ink">
+            AptitudeArena
+          </Link>
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <Link href="/tests" className="text-slate-600 hover:text-ink">
+              Test Catalog
+            </Link>
+            <Link href="/dashboard" className="text-brand hover:underline">
+              Student Dashboard
+            </Link>
+          </div>
+        </div>
+      </nav>
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-12">
@@ -302,7 +318,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-center gap-2.5">
                     <Check size={16} className="text-brand shrink-0" />
-                    <span>Cancel anytime with 1 click</span>
+                    <span>30-Day unlimited access (No recurring auto-debit)</span>
                   </li>
                 </ul>
               </div>

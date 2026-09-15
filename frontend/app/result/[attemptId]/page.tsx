@@ -16,6 +16,7 @@ import {
   Loader2,
   Check,
   X,
+  Target,
 } from "lucide-react";
 import { getAttemptResult } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -101,6 +102,135 @@ function ResultPageContent() {
       : review.speed_performance?.pace_status === "OPTIMAL"
       ? "Speed: Optimal Campus Placement Pace (30-60s)"
       : "Speed: Deliberate / Over-Time (>60s avg)";
+
+  // Adaptive difficulty recommendation
+  const currentDiff = review.test_difficulty || "EASY";
+  const accuracy = review.accuracy;
+
+  let recommendation = {
+    targetLevel: "MEDIUM" as "EASY" | "MEDIUM" | "HARD",
+    badge: "Level Up Recommended",
+    badgeColor: "bg-amber-100 text-amber-900 border-amber-300",
+    cardBorder: "border-amber-200",
+    bgGradient: "bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent",
+    btnColor: "bg-amber-600 hover:bg-amber-700 text-white",
+    title: "Step Up to Medium Difficulty",
+    description: `Impressive! You scored ${accuracy}% on this Easy test. We recommend stepping up to Medium tests to mirror company screening tests (TCS NQT, Infosys, Cognizant).`,
+    href: "/tests?difficulty=MEDIUM",
+    buttonText: "Solve Medium Tests",
+  };
+
+  if (currentDiff === "EASY") {
+    if (accuracy >= 70) {
+      recommendation = {
+        targetLevel: "MEDIUM",
+        badge: "Level Up Recommended",
+        badgeColor: "bg-amber-100 text-amber-900 border-amber-300",
+        cardBorder: "border-amber-200",
+        bgGradient: "bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent",
+        btnColor: "bg-amber-600 hover:bg-amber-700 text-white",
+        title: "Step Up to Medium Difficulty",
+        description: `Impressive! You scored ${accuracy}% on this Easy test. We recommend stepping up to Medium tests to mirror company screening tests (TCS NQT, Infosys, Cognizant).`,
+        href: "/tests?difficulty=MEDIUM",
+        buttonText: "Solve Medium Tests",
+      };
+    } else {
+      recommendation = {
+        targetLevel: "EASY",
+        badge: "Foundational Practice Recommended",
+        badgeColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
+        cardBorder: "border-emerald-200",
+        bgGradient: "bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent",
+        btnColor: "bg-emerald-600 hover:bg-emerald-700 text-white",
+        title: "Master Easy Foundations First",
+        description: `You scored ${accuracy}%. Before moving to tricky aptitude puzzles, aim for 70%+ consistency on Easy tests to strengthen fundamental formulas and time management.`,
+        href: "/tests?difficulty=EASY",
+        buttonText: "Practice Another Easy Test",
+      };
+    }
+  } else if (currentDiff === "MEDIUM") {
+    if (accuracy >= 70) {
+      recommendation = {
+        targetLevel: "HARD",
+        badge: "Elite Challenge Recommended",
+        badgeColor: "bg-rose-100 text-rose-900 border-rose-300",
+        cardBorder: "border-rose-200",
+        bgGradient: "bg-gradient-to-r from-rose-500/10 via-purple-500/5 to-transparent",
+        btnColor: "bg-rose-600 hover:bg-rose-700 text-white",
+        title: "Step Up to Hard / Advanced Difficulty",
+        description: `Outstanding accuracy of ${accuracy}%! You're dominating Medium difficulty. Step up to Hard tests for top-tier company rounds (TCS Prime/Digital, Amazon, Accolite, product firms).`,
+        href: "/tests?difficulty=HARD",
+        buttonText: "Attempt Hard Tests",
+      };
+    } else if (accuracy < 50) {
+      recommendation = {
+        targetLevel: "EASY",
+        badge: "Foundational Review Recommended",
+        badgeColor: "bg-emerald-100 text-emerald-900 border-emerald-300",
+        cardBorder: "border-emerald-200",
+        bgGradient: "bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent",
+        btnColor: "bg-emerald-600 hover:bg-emerald-700 text-white",
+        title: "Build Core Speed with Easy Tests",
+        description: `You scored ${accuracy}%. Medium questions require multi-step arithmetic. Practicing Easy tests will help you master core formulas and pace under test conditions.`,
+        href: "/tests?difficulty=EASY",
+        buttonText: "Strengthen with Easy Tests",
+      };
+    } else {
+      recommendation = {
+        targetLevel: "MEDIUM",
+        badge: "Target 70%+ Consistency",
+        badgeColor: "bg-amber-100 text-amber-900 border-amber-300",
+        cardBorder: "border-amber-200",
+        bgGradient: "bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent",
+        btnColor: "bg-amber-600 hover:bg-amber-700 text-white",
+        title: "Continue Medium Practice",
+        description: `Solid performance! You scored ${accuracy}%. Take another Medium test and focus on high-yield topics to push your accuracy past 70%.`,
+        href: "/tests?difficulty=MEDIUM",
+        buttonText: "Practice Another Medium Test",
+      };
+    }
+  } else if (currentDiff === "HARD") {
+    if (accuracy >= 70) {
+      recommendation = {
+        targetLevel: "HARD",
+        badge: "Campus Placement Ready",
+        badgeColor: "bg-indigo-100 text-indigo-900 border-indigo-300",
+        cardBorder: "border-indigo-200",
+        bgGradient: "bg-gradient-to-r from-indigo-500/10 via-blue-500/5 to-transparent",
+        btnColor: "bg-indigo-600 hover:bg-indigo-700 text-white",
+        title: "Elite Placement Ready!",
+        description: `Exceptional! Scoring ${accuracy}% on Hard difficulty places you in the top tier of campus candidates. Maintain this standard with mixed mock tests.`,
+        href: "/tests",
+        buttonText: "Explore Full Test Catalog",
+      };
+    } else if (accuracy < 50) {
+      recommendation = {
+        targetLevel: "MEDIUM",
+        badge: "Step Down Recommended",
+        badgeColor: "bg-amber-100 text-amber-900 border-amber-300",
+        cardBorder: "border-amber-200",
+        bgGradient: "bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent",
+        btnColor: "bg-amber-600 hover:bg-amber-700 text-white",
+        title: "Reinforce with Medium Difficulty First",
+        description: `Hard tests feature complex edge cases. Practicing Medium tests first will help you master elimination techniques and timing before retrying Hard rounds.`,
+        href: "/tests?difficulty=MEDIUM",
+        buttonText: "Practice Medium Tests First",
+      };
+    } else {
+      recommendation = {
+        targetLevel: "HARD",
+        badge: "Advanced Practice",
+        badgeColor: "bg-rose-100 text-rose-900 border-rose-200",
+        cardBorder: "border-rose-200",
+        bgGradient: "bg-gradient-to-r from-rose-500/10 via-purple-500/5 to-transparent",
+        btnColor: "bg-rose-600 hover:bg-rose-700 text-white",
+        title: "Continue Hard Problem Solving",
+        description: `You scored ${accuracy}% on advanced problems. Review the step-by-step solutions below to learn shortcut methods, then tackle another Hard test.`,
+        href: "/tests?difficulty=HARD",
+        buttonText: "Attempt Another Hard Test",
+      };
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
@@ -221,6 +351,42 @@ function ResultPageContent() {
               Standard tier-1 campus exams allow an average of 45–60 seconds per question. You averaged{" "}
               <strong>{Math.round(review.average_time_seconds)}s</strong>.
             </p>
+          </div>
+        </div>
+
+        {/* Adaptive Difficulty Recommendation Card */}
+        <div className={`mt-6 rounded-2xl border ${recommendation.cardBorder} ${recommendation.bgGradient} p-5 sm:p-6 shadow-xs bg-white`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-bold border ${recommendation.badgeColor}`}>
+                  <Target size={13} />
+                  <span>{recommendation.badge}</span>
+                </span>
+                {review.test_difficulty && (
+                  <span className="text-[11px] font-medium text-slate-500">
+                    Current Test Level: <strong className="text-slate-800">{review.test_difficulty}</strong>
+                  </span>
+                )}
+              </div>
+
+              <h2 className="mt-2.5 text-lg font-bold text-ink tracking-tight">
+                {recommendation.title}
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                {recommendation.description}
+              </p>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-3">
+              <Link
+                href={recommendation.href}
+                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-xs transition ${recommendation.btnColor}`}
+              >
+                <span>{recommendation.buttonText}</span>
+                <ArrowRight size={15} />
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -366,9 +532,24 @@ function ResultPageContent() {
                 >
                   {/* Status header */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <span className="text-xs font-bold text-slate-500">
-                      Question {ans.position} of {review.total_questions}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-500">
+                        Question {ans.position} of {review.total_questions}
+                      </span>
+                      {ans.difficulty && (
+                        <span
+                          className={`rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide border ${
+                            ans.difficulty === "EASY"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : ans.difficulty === "MEDIUM"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
+                          }`}
+                        >
+                          {ans.difficulty}
+                        </span>
+                      )}
+                    </div>
 
                     <span
                       className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold ${

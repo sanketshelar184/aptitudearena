@@ -31,6 +31,7 @@ export interface PublicQuestion {
   option_c: string;
   option_d: string;
   selected_answer?: string | null;
+  difficulty?: Difficulty | null;
 }
 
 export interface StartAttemptResponse {
@@ -75,6 +76,7 @@ export interface AnswerReview {
   correct_answer: string;
   is_correct: boolean | null;
   explanation: string;
+  difficulty?: Difficulty | null;
 }
 
 export interface SpeedPerformance {
@@ -84,6 +86,8 @@ export interface SpeedPerformance {
 }
 
 export interface AttemptReview extends AttemptResult {
+  test_name?: string | null;
+  test_difficulty?: Difficulty | null;
   topic_performance: TopicPerformance[];
   weakest_topic: string | null;
   speed_performance: SpeedPerformance;

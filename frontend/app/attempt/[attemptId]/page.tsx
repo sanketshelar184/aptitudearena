@@ -274,9 +274,24 @@ function ExamAttemptContent() {
           <div>
             {/* Question Header Bar */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-brand border border-blue-100">
-                Question {currentIndex + 1}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-brand border border-blue-100">
+                  Question {currentIndex + 1}
+                </span>
+                {currentQuestion.difficulty && (
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase border ${
+                      currentQuestion.difficulty === "EASY"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : currentQuestion.difficulty === "MEDIUM"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
+                    }`}
+                  >
+                    {currentQuestion.difficulty}
+                  </span>
+                )}
+              </div>
 
               <div className="flex items-center gap-2">
                 <button

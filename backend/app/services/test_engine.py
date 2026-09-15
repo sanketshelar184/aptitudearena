@@ -34,10 +34,9 @@ def hash_guest_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def get_recent_question_ids(db: Session, user_id: UUID | None, guest_token_hash: str | None) -> set[UUID]:
-    """Get question IDs answered by this user/guest in recent attempts to reduce repetition."""
-    since = utc_now() - timedelta(days=7)
-    query = select(TestAnswer.question_id).join(TestAttempt).where(TestAttempt.created_at >= since)
+def get_all_attempted_question_ids(db: Session, user_id: UUID | None, guest_token_hash: str | None) -> set[UUID]:
+    """Get all question IDs ever attempted by this user/guest across their lifetime history to prevent question repetition."""
+    query = select(TestAnswer.question_id).join(TestAttempt)
     if user_id:
         query = query.where(TestAttempt.user_id == user_id)
     elif guest_token_hash:
@@ -45,6 +44,10 @@ def get_recent_question_ids(db: Session, user_id: UUID | None, guest_token_hash:
     else:
         return set()
     return set(db.scalars(query).all())
+
+
+# Backwards compatibility alias
+get_recent_question_ids = get_all_attempted_question_ids
 
 
 def selected_questions(
@@ -66,7 +69,7 @@ def selected_questions(
             raise HTTPException(status_code=409, detail="Test has fewer configured questions than required")
         return fixed[: test.question_count]
 
-    # 2. Dynamic Selection
+    # 2. Dynamic Selection with Strict Zero-Repeat Priority
     base_filter = [Question.is_active.is_(True)]
     if not test.is_premium:
         base_filter.append(Question.is_premium.is_(False))
@@ -86,15 +89,22 @@ def selected_questions(
         else:
             eligible = list(db.scalars(query).all())
 
-        filtered = [q for q in eligible if q.id not in exclude]
-        pool = filtered if len(filtered) >= test.question_count else eligible
+        unseen = [q for q in eligible if q.id not in exclude]
+        if len(unseen) >= test.question_count:
+            return random.sample(unseen, test.question_count)
 
-        if len(pool) < test.question_count:
+        # If unseen questions are fewer than required, take all unseen first, then fill remainder
+        selected_pool = list(unseen)
+        seen_candidates = [q for q in eligible if q.id in exclude and q.id not in {x.id for x in selected_pool}]
+        needed = test.question_count - len(selected_pool)
+        if len(seen_candidates) < needed:
             raise HTTPException(
                 status_code=409,
                 detail="Not enough eligible questions available for this topic test.",
             )
-        return random.sample(pool, test.question_count)
+        selected_pool.extend(random.sample(seen_candidates, needed))
+        random.shuffle(selected_pool)
+        return selected_pool
 
     # Case B: Category Test
     if test.category_id:
@@ -105,17 +115,23 @@ def selected_questions(
         else:
             eligible = list(db.scalars(query).all())
 
-        filtered = [q for q in eligible if q.id not in exclude]
-        pool = filtered if len(filtered) >= test.question_count else eligible
+        unseen = [q for q in eligible if q.id not in exclude]
+        if len(unseen) >= test.question_count:
+            return random.sample(unseen, test.question_count)
 
-        if len(pool) < test.question_count:
+        selected_pool = list(unseen)
+        seen_candidates = [q for q in eligible if q.id in exclude and q.id not in {x.id for x in selected_pool}]
+        needed = test.question_count - len(selected_pool)
+        if len(seen_candidates) < needed:
             raise HTTPException(
                 status_code=409,
                 detail="Not enough eligible questions available for this category test.",
             )
-        return random.sample(pool, test.question_count)
+        selected_pool.extend(random.sample(seen_candidates, needed))
+        random.shuffle(selected_pool)
+        return selected_pool
 
-    # Case C: Mixed Test (select evenly across active categories)
+    # Case C: Mixed Test (select evenly across active categories prioritizing unseen)
     categories = list(db.scalars(select(Category).order_by(Category.name)).all())
     selected: list[Question] = []
     seen_ids: set[UUID] = set()
@@ -135,29 +151,47 @@ def selected_questions(
                 cat_eligible = diff_eligible if len(diff_eligible) >= quota else list(db.scalars(cat_query).all())
             else:
                 cat_eligible = list(db.scalars(cat_query).all())
-            cat_filtered = [q for q in cat_eligible if q.id not in exclude]
-            cat_pool = cat_filtered if len(cat_filtered) >= quota else cat_eligible
 
-            sample_size = min(len(cat_pool), quota)
-            sampled = random.sample(cat_pool, sample_size)
-            for q in sampled:
+            # Prioritize unseen questions in this category
+            cat_unseen = [q for q in cat_eligible if q.id not in exclude and q.id not in seen_ids]
+            if len(cat_unseen) >= quota:
+                cat_sampled = random.sample(cat_unseen, quota)
+            else:
+                cat_sampled = list(cat_unseen)
+                needed = quota - len(cat_sampled)
+                cat_seen = [
+                    q for q in cat_eligible
+                    if q.id in exclude and q.id not in seen_ids and q.id not in {x.id for x in cat_sampled}
+                ]
+                cat_sampled.extend(random.sample(cat_seen, min(len(cat_seen), needed)))
+
+            for q in cat_sampled:
                 if q.id not in seen_ids:
                     selected.append(q)
                     seen_ids.add(q.id)
 
-    # If shortfall from any category, fill from any remaining active questions
+    # If shortfall from any category, fill from remaining active questions (unseen first)
     if len(selected) < test.question_count:
         fallback_query = select(Question).where(*base_filter)
         if test.difficulty:
             fallback_query = fallback_query.where(Question.difficulty == test.difficulty)
-        fallback_eligible = [q for q in db.scalars(fallback_query).all() if q.id not in seen_ids]
+        all_fallback = list(db.scalars(fallback_query).all())
+
+        fallback_unseen = [q for q in all_fallback if q.id not in seen_ids and q.id not in exclude]
         shortfall = test.question_count - len(selected)
-        if len(fallback_eligible) < shortfall:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Not enough eligible questions in the question bank (found {len(selected) + len(fallback_eligible)}, needed {test.question_count}).",
-            )
-        selected.extend(random.sample(fallback_eligible, shortfall))
+        if len(fallback_unseen) >= shortfall:
+            selected.extend(random.sample(fallback_unseen, shortfall))
+        else:
+            selected.extend(fallback_unseen)
+            seen_ids.update(q.id for q in fallback_unseen)
+            remaining_shortfall = test.question_count - len(selected)
+            fallback_seen = [q for q in all_fallback if q.id not in seen_ids]
+            if len(fallback_seen) < remaining_shortfall:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Not enough eligible questions in the question bank (found {len(selected) + len(fallback_seen)}, needed {test.question_count}).",
+                )
+            selected.extend(random.sample(fallback_seen, remaining_shortfall))
 
     random.shuffle(selected)
     return selected[: test.question_count]
@@ -320,6 +354,7 @@ def review_attempt(db: Session, attempt: TestAttempt) -> AttemptReview:
                 correct_answer=question.correct_answer,
                 is_correct=answer.is_correct,
                 explanation=question.explanation,
+                difficulty=question.difficulty,
             )
         )
 
@@ -336,6 +371,7 @@ def review_attempt(db: Session, attempt: TestAttempt) -> AttemptReview:
     performance.sort(key=lambda item: (item.accuracy, -item.total, item.topic))
 
     summary = result_summary(attempt)
+    test = db.get(Test, attempt.test_id)
 
     # Speed assessment
     avg_sec = summary.average_time_seconds
@@ -354,6 +390,8 @@ def review_attempt(db: Session, attempt: TestAttempt) -> AttemptReview:
 
     return AttemptReview(
         **summary.model_dump(),
+        test_name=test.name if test else None,
+        test_difficulty=test.difficulty if test else None,
         topic_performance=performance,
         weakest_topic=performance[0].topic if performance else None,
         speed_performance=speed,

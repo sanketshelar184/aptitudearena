@@ -120,9 +120,9 @@ const plans = [
       "Personal Weak-Topic Diagnostics",
       "Solving Speed & Pace Tracker",
       "Performance Streaks & History",
-      "Cancel anytime in one click",
+      "30-Day Full Access (No recurring auto-debit)",
     ],
-    ctaText: "Get Pro for ₹99/mo",
+    ctaText: "Get Pro for ₹99",
     ctaLink: "/pricing",
   },
 ];
@@ -137,8 +137,8 @@ const faqs = [
     a: "If you just want to take one quick mock test without subscribing, you can pay a flat ₹10. You will get immediate access to attempt that test and its detailed post-test solution review.",
   },
   {
-    q: "Can I cancel the ₹99/month Pro subscription anytime?",
-    a: "Yes. There are zero lock-ins or contracts. You can cancel with a single click from your billing page whenever you like.",
+    q: "How does the ₹99 Pro Pass work?",
+    a: "You get 30 days of complete, unlimited access to all aptitude tests, technical MCQs (DBMS, OOPs, C/C++), and company placement papers with a direct one-time payment. There are no recurring card charges or auto-debit surprises.",
   },
   {
     q: "Are the questions relevant for TCS NQT and Infosys tests?",
@@ -149,6 +149,40 @@ const faqs = [
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-ink">
+      {/* Top Navigation */}
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white font-black text-sm shadow-xs">
+              AA
+            </span>
+            <span className="text-base font-black tracking-tight text-ink">
+              Aptitude<span className="text-brand">Arena</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <Link
+              href="/pricing"
+              className="hidden sm:inline-flex px-3.5 py-2 font-semibold text-slate-600 hover:text-ink transition"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/login"
+              className="px-3.5 py-2 font-semibold text-slate-700 hover:text-ink transition"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/tests/free"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 font-bold text-white shadow-xs hover:bg-blue-700 transition"
+            >
+              <span>Free Test</span>
+              <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+      </header>
       <Navbar />
 
       {/* Hero Section */}

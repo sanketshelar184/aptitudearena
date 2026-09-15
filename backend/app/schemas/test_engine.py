@@ -54,6 +54,7 @@ class TestQuestionPublic(BaseModel):
     option_c: str
     option_d: str
     selected_answer: str | None = None
+    difficulty: Difficulty | None = None
 
 
 class TestPreviewResponse(BaseModel):
@@ -127,6 +128,7 @@ class AnswerReview(BaseModel):
     correct_answer: str
     is_correct: bool | None
     explanation: str
+    difficulty: Difficulty | None = None
 
 
 class SpeedPerformance(BaseModel):
@@ -136,6 +138,8 @@ class SpeedPerformance(BaseModel):
 
 
 class AttemptReview(AttemptResult):
+    test_name: str | None = None
+    test_difficulty: Difficulty | None = None
     topic_performance: list[TopicPerformance]
     weakest_topic: str | None
     speed_performance: SpeedPerformance
