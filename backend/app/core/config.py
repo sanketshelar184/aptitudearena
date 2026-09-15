@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     # Google OAuth 2.0 / Google Identity Services
     google_client_id: str | None = None
 
+    # Google Gemini API Key
+    gemini_api_key: str | None = None
+
     @field_validator("database_url", mode="after")
     @classmethod
     def assemble_db_connection(cls, v: str) -> str:

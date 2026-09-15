@@ -1,0 +1,93 @@
+[
+  {
+    "question_text": "The statement terminator in C language is:",
+    "option_a": "semicolon",
+    "option_b": "colon",
+    "option_c": "period",
+    "option_d": "exclamation mark",
+    "correct_answer": "A",
+    "difficulty": "EASY",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested:\nThis question tests fundamental C language syntax, specifically how individual statements are terminated.\n\nStep-by-Step Calculation or Code Execution Trace:\nIn C, every executable statement (e.g., variable declaration, assignment, function call) must end with a semicolon (;). This signals to the compiler that the current statement has concluded and the next one (if any) is about to begin. Without a semicolon, the compiler might treat multiple lines as a single statement, leading to syntax errors.\n\nOption Elimination:\n*   (B) Colon (:) is used for labels (e.g., in `goto` statements or `switch` cases) or in C++ for base class initializers/member initializers, but not as a statement terminator.\n*   (C) Period (.) is used for accessing members of structures or unions, or as a decimal point in numbers, but not as a statement terminator.\n*   (D) Exclamation mark (!) is used as the logical NOT operator, but not as a statement terminator.\n\nCampus Placement Tip:\nAlways remember to terminate C statements with a semicolon. Forgetting semicolons is one of the most common syntax errors for beginners. Modern IDEs and compilers usually highlight these errors effectively. While it seems basic, attention to such details is crucial for clean, compilable code in interviews.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  },
+  {
+    "question_text": "Which of the following statements is FALSE regarding a compound statement in C?",
+    "option_a": "A set of simple statements",
+    "option_b": "Demarcated on either side by curly brackets",
+    "option_c": "Can be used in place of a simple statement",
+    "option_d": "A C function is not a compound statement",
+    "correct_answer": "D",
+    "difficulty": "MEDIUM",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested:\nThis question assesses the understanding of compound statements (also known as 'blocks') in C and their usage.\n\nStep-by-Step Calculation or Code Execution Trace:\nA compound statement in C is a group of zero or more statements enclosed in curly brackets `{}`. It allows multiple statements to be treated as a single unit where the C syntax expects a single statement.\n\nLet's evaluate each option:\n*   (A) \"A set of simple statements\": TRUE. A compound statement is precisely designed to group multiple simple statements (and even other compound statements) together.\n*   (B) \"Demarcated on either side by curly brackets\": TRUE. The defining characteristic of a compound statement is its enclosure within `{}`.\n*   (C) \"Can be used in place of a simple statement\": TRUE. For example, in an `if` statement like `if (condition) { /* compound statement */ }`, the entire block acts as the 'single statement' to be executed if the condition is true. The same applies to `for`, `while`, `do-while` loops, etc.\n*   (D) \"A C function is not a compound statement\": FALSE. The body of a C function, which contains all the executable code, is always enclosed in curly brackets `{}`. This makes the function body, by definition, a compound statement. Therefore, this statement is false, making it the correct answer to the question asking what is false.\n\nOption Elimination:\nOptions A, B, and C accurately describe properties of a compound statement. Option D makes an incorrect assertion; the body of a C function *is* a compound statement.\n\nCampus Placement Tip:\nUnderstand that curly braces define a 'scope' or 'block' in C. This is crucial for controlling flow (loops, conditionals) and defining functions. This concept is fundamental and often implicitly tested in coding problems. Recognizing a function body as a compound statement helps in understanding variable scope and execution flow.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  },
+  {
+    "question_text": "Which of the following statements is TRUE about C functions?",
+    "option_a": "Need not return any value",
+    "option_b": "Should always return an integer",
+    "option_c": "Should always return a float",
+    "option_d": "Should always return more than one value",
+    "correct_answer": "A",
+    "difficulty": "EASY",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested:\nThis question focuses on the fundamental properties of function return types in the C programming language.\n\nStep-by-Step Calculation or Code Execution Trace:\nIn C, functions are defined to perform specific tasks. After completing their task, they can optionally return a value to the calling function. The type of value a function returns is specified by its return type.\n\nLet's evaluate each option:\n*   (A) \"Need not return any value\": TRUE. C functions can be declared with a `void` return type. A `void` function means it performs an action but does not send back any specific data value to the caller. For example: `void printMessage() { printf(\"Hello\"); }`.\n*   (B) \"Should always return an integer\": FALSE. Functions can return values of various data types, such as `int`, `float`, `char`, `double`, `long`, pointers, or even custom structures. `main` function typically returns an `int`, but this is not a rule for all functions.\n*   (C) \"Should always return a float\": FALSE. Similar to the above, functions are not restricted to returning only floating-point numbers.\n*   (D) \"Should always return more than one value\": FALSE. A C function can directly return only one value at a time (or no value if `void`). To effectively return multiple pieces of information, you typically use pointers (pass-by-reference) or return a structure/union containing multiple members.\n\nOption Elimination:\nOptions B and C are incorrect because C functions support a wide range of return types, including `void`. Option D is incorrect because C functions can only directly return a single value.\n\nCampus Placement Tip:\nUnderstand the `void` keyword's role for functions that perform actions without returning data. Also, remember that while a function can only directly return one value, techniques like passing pointers as arguments or returning a `struct` or `union` can be used to achieve the effect of 'returning' multiple pieces of information. This distinction is often tested in theoretical and practical scenarios.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  },
+  {
+    "question_text": "In a C/C++ program, the `main()` function must be declared and defined:",
+    "option_a": "As the first function in the program.",
+    "option_b": "As the second function in the program.",
+    "option_c": "As the last function in the program.",
+    "option_d": "Anywhere in the program.",
+    "correct_answer": "D",
+    "difficulty": "EASY",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested: Structure of a C/C++ program and the `main()` function.\n\nStep-by-Step Calculation or Code Execution Trace:\n1. The `main()` function serves as the entry point for program execution in C/C++. The operating system begins execution by calling this function.\n2. The C/C++ compiler is designed to locate the `main()` function regardless of its physical placement in the source file.\n3. As long as `main()` is defined exactly once in the program, its position relative to other functions (first, last, or in between) does not affect the program's ability to compile and run.\n\nOption Elimination: Why other options are incorrect\n*   (A) 'As the first function in the program': This is incorrect. There is no rule in C/C++ that dictates `main()` must be the first function.\n*   (B) 'As the second function in the program': This is incorrect. There is no positional requirement for `main()`.\n*   (C) 'As the last function in the program': This is incorrect. Similar to (A) and (B), its position is flexible.\n*   (D) 'Anywhere in the program': This is the correct statement, as the compiler will link to it irrespective of its physical location in the source code file.\n\nCampus Placement Tip: Remember that the order of function definitions (except for specific cases involving prototypes or dependencies) generally doesn't matter for compilation, as long as all functions are defined and prototypes are correctly placed if needed. `main()` is simply an entry point and not position-dependent.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  },
+  {
+    "question_text": "Which of the following statements about automatic variables declared within a function in C/C++ is correct?",
+    "option_a": "Their type must be declared before using the variable.",
+    "option_b": "They are local to the function.",
+    "option_c": "They are not initialized to zero by default.",
+    "option_d": "They are global variables.",
+    "correct_answer": "C",
+    "difficulty": "MEDIUM",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested: Properties of automatic variables in C/C++, specifically their scope, lifetime, and default initialization.\n\nStep-by-Step Calculation or Code Execution Trace:\n1.  **Automatic Variables:** These are variables declared inside a function or a block without any storage class specifiers (like `static` or `extern`) or explicitly with the `auto` keyword (which is rarely used as it's the default).\n2.  **Scope:** They have **block scope**, meaning they are accessible only within the block they are declared. This makes them 'local' to that function or block.\n3.  **Lifetime:** Their storage is allocated on the program's stack when the block is entered and automatically deallocated when the block is exited.\n4.  **Initialization:** A key characteristic is that automatic variables are **not initialized by default**. If you declare an `int` or `float` automatic variable without an explicit initializer, it will contain an arbitrary 'garbage' value.\n\nOption Elimination: Why other options are incorrect\n*   (A) 'Their type must be declared before using the variable': This is a general rule for *all* variables in C/C++ (before C99), not a distinguishing characteristic of *automatic* variables. While true, it doesn't specifically define an automatic variable.\n*   (B) 'They are local to the function': This is true for automatic variables, as they have block scope. However, local `static` variables are also local to the function, but they have different initialization and lifetime properties. Option (C) offers a more specific and unique characteristic of *automatic* variables that distinguishes them from *local static* variables.\n*   (D) 'They are global variables': This is incorrect. Global variables are declared outside all functions and have file scope, meaning they are accessible throughout the entire file (or program with `extern`). Automatic variables have strictly local scope.\n*   (C) 'They are not initialized to zero by default': This is the most accurate and distinguishing property. While global and static variables are guaranteed to be initialized to zero (or their explicit initializer) if not explicitly initialized, automatic variables hold indeterminate (garbage) values by default unless explicitly initialized by the programmer.\n\nCampus Placement Tip: Always differentiate between the storage classes (automatic, static, register, extern) based on their **scope, lifetime, and default initialization rules**. Automatic variables (e.g., `int x;` inside `main()`) are local, stored on the stack, and contain garbage by default. Static local variables (e.g., `static int y;` inside `main()`) are also local but have program lifetime and are zero-initialized by default.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  },
+  {
+    "question_text": "Which single statement is equivalent to the following two C/C++ statements?\n```c\nx = sqr(a);\nreturn(x);\n```",
+    "option_a": "`return(sqr(a));`",
+    "option_b": "`printf(\"sqr(a)\");`",
+    "option_c": "`return(a*a*a);`",
+    "option_d": "`printf(\"%d\",sqr(a));`",
+    "correct_answer": "A",
+    "difficulty": "EASY",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested: Understanding function return values and expression evaluation.\n\nStep-by-Step Calculation or Code Execution Trace:\n1.  The original code first calls a function `sqr()` with argument `a`.\n2.  The result of `sqr(a)` is then assigned to a temporary variable `x`.\n3.  Finally, the value stored in `x` is returned from the current function.\n4.  The single statement `return(sqr(a));` directly evaluates `sqr(a)` and uses its result as the return value of the function. This achieves the exact same logical outcome as the two-statement sequence but in a more concise manner.\n\nOption Elimination: Why other options are incorrect\n*   (B) '`printf(\"sqr(a)\");`': This statement prints the literal string \"sqr(a)\" to the standard output. It does not calculate `sqr(a)` nor does it return a value from the function that is related to `sqr(a)`.\n*   (C) '`return(a*a*a);`': This statement calculates `a` cubed (`a` multiplied by itself three times) and returns that value. This is generally not equivalent to `sqr(a)`, which typically means `a` squared (`a*a`).\n*   (D) '`printf(\"%d\",sqr(a));`': This statement calculates `sqr(a)`, then prints its integer value to the standard output. While it calculates `sqr(a)`, it does not return the value from the function; instead, `printf` itself might return an integer representing the number of characters printed, which is not the intended return value of `sqr(a)`.\n\nCampus Placement Tip: Look for direct equivalences and avoid unnecessary temporary variables. Writing concise and clear code like `return(sqr(a));` is generally considered good practice and more efficient as it reduces temporary variable overhead, which compilers often optimize away anyway.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  },
+  {
+    "question_text": "Which of the following statements about C-style comments (`/* ... */` and `// ...`) is incorrect?",
+    "option_a": "Comments can span multiple lines.",
+    "option_b": "Comments can start anywhere in a line.",
+    "option_c": "A line can contain only comments without any language statements.",
+    "option_d": "C-style block comments (`/* ... */`) can be nested within other C-style block comments.",
+    "correct_answer": "D",
+    "difficulty": "MEDIUM",
+    "category_name": "Technical CS/IT",
+    "topic_name": "C & C++ Programming",
+    "explanation": "Core Concept Tested: Rules for C-style comments (`/* ... */` for block comments and `// ...` for single-line comments).\n\nStep-by-Step Calculation or Code Execution Trace:\nLet's evaluate each option:\n*   (A) **'Comments can span multiple lines.'**: This is **TRUE**. Block comments (`/* ... */`) are specifically designed for multi-line comments. For example:\n    ```c\n    /* This is a\n       multi-line\n       comment */\n    ```\n    Single-line comments (`//`) can also be used on successive lines to achieve a similar effect.\n*   (B) **'Comments can start anywhere in a line.'**: This is **TRUE**. Comments can start at the beginning of a line or after some code on the same line. For example:\n    ```c\n    int x; // This is a comment starting mid-line\n    /* This is a comment\n       starting at the beginning of a line. */\n    ```\n*   (C) **'A line can contain only comments without any language statements.'**: This is **TRUE**. It is common practice to have lines dedicated solely to comments for better code readability and documentation.\n    ```c\n    // This entire line is a comment\n    /* This entire line\n       is also a comment */\n    ```\n*   (D) **'C-style block comments (`/* ... */`) can be nested within other C-style block comments.'**: This is **FALSE**. C's block comments (`/* ... */`) do NOT nest. The first `/*` encountered starts a comment, and the first `*/` encountered terminates it, regardless of any other `/*` characters found within. If you try to nest them, the inner `*/` will prematurely end the outer comment, leading to syntax errors for the remaining code.\n    Example of failed nesting:\n    ```c\n    /* Outer comment starts here\n       int main() {\n           /* Inner comment starts here */ // <-- This '*/' closes the outer comment!\n           printf(\"Hello\");\n       }\n    */ // This '*/' now becomes a syntax error.\n    ```\n\nOption Elimination: Options (A), (B), and (C) describe correct behaviors of C comments. Option (D) describes an incorrect behavior, making it the answer to the question 'Which... is incorrect?'.\n\nCampus Placement Tip: Remember the key distinction: C-style block comments (`/* ... */`) do NOT nest. This is a frequent interview question and a common source of compilation errors when developers try to comment out large blocks of code that already contain existing block comments.",
+    "source": "(www.entrance-exam.net)-TCS Placement Sample Paper 2.docx.pdf"
+  }
+]

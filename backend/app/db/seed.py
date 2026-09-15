@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -65,6 +66,18 @@ INITIAL_CATEGORIES_DATA = {
             ("Para Jumbles", "para-jumbles"),
             ("Reading Comprehension", "reading-comprehension"),
             ("Error Detection", "error-detection"),
+        ],
+    },
+    "Technical CS/IT": {
+        "slug": "technical-cs-it",
+        "topics": [
+            ("C & C++ Programming", "c-cpp-programming"),
+            ("OOPs Concepts", "oops-concepts"),
+            ("Pointers & Memory", "pointers-memory"),
+            ("Data Structures", "data-structures"),
+            ("DBMS & SQL", "dbms-sql"),
+            ("Operating Systems", "operating-systems"),
+            ("Computer Networks", "computer-networks"),
         ],
     },
 }
@@ -614,6 +627,34 @@ DEFAULT_TESTS = [
         "negative_marking_ratio": 0.0,
         "status": TestStatus.PUBLISHED,
     },
+    {
+        "name": "Technical CS/IT Foundations - Easy",
+        "description": "Essential campus placement questions covering C language syntax, variable scoping, pointers, and function returns.",
+        "question_count": 10,
+        "duration_seconds": 600,
+        "category_name": "Technical CS/IT",
+        "topic_name": None,
+        "difficulty": Difficulty.EASY,
+        "is_free": True,
+        "is_premium": False,
+        "price_inr": 0,
+        "negative_marking_ratio": 0.0,
+        "status": TestStatus.PUBLISHED,
+    },
+    {
+        "name": "TCS Technical C/C++ & OOPs Challenge",
+        "description": "Core technical test evaluating C/C++ pointers, compound statements, memory allocation, and object-oriented paradigms.",
+        "question_count": 10,
+        "duration_seconds": 600,
+        "category_name": "Technical CS/IT",
+        "topic_name": None,
+        "difficulty": Difficulty.MEDIUM,
+        "is_free": False,
+        "is_premium": True,
+        "price_inr": 10,
+        "negative_marking_ratio": 0.0,
+        "status": TestStatus.PUBLISHED,
+    },
 ]
 
 
@@ -696,10 +737,71 @@ def seed_database(db: Session) -> None:
                 source=q["source"],
             )
             db.add(question)
-            questions_added += 1
+    # Also seed questions from dynamically ingested JSON catalog if available
+    ingested_catalog_path = Path(__file__).resolve().parent.parent.parent / "data" / "ingested_questions.json"
+    if ingested_catalog_path.exists():
+        import json
+        try:
+            with open(ingested_catalog_path, "r", encoding="utf-8") as f:
+                ingested_list = json.load(f)
+            for item in ingested_list:
+                cat_name = item.get("category_name", "Technical CS/IT")
+                top_name = item.get("topic_name", "C & C++ Programming")
+
+                cat_obj = category_map.get(cat_name)
+                if not cat_obj:
+                    cat_obj = db.scalar(select(Category).where(Category.name == cat_name))
+                    if not cat_obj:
+                        cat_slug = cat_name.lower().replace(" ", "-").replace("&", "and").replace("/", "-")
+                        cat_obj = Category(name=cat_name, slug=cat_slug)
+                        db.add(cat_obj)
+                        db.flush()
+                    category_map[cat_name] = cat_obj
+
+                top_obj = topic_map.get((cat_name, top_name))
+                if not top_obj:
+                    top_obj = db.scalar(select(Topic).where(Topic.category_id == cat_obj.id, Topic.name == top_name))
+                    if not top_obj:
+                        top_slug = top_name.lower().replace(" ", "-").replace("&", "and").replace("/", "-")
+                        top_obj = Topic(category_id=cat_obj.id, name=top_name, slug=top_slug)
+                        db.add(top_obj)
+                        db.flush()
+                    topic_map[(cat_name, top_name)] = top_obj
+
+                q_text = item.get("question_text", "").strip()
+                if not q_text:
+                    continue
+
+                existing = db.scalar(select(Question).where(Question.question_text == q_text))
+                if not existing:
+                    diff_str = str(item.get("difficulty", "MEDIUM")).upper()
+                    diff_enum = Difficulty.EASY if diff_str == "EASY" else Difficulty.HARD if diff_str == "HARD" else Difficulty.MEDIUM
+
+                    db.add(
+                        Question(
+                            question_text=q_text,
+                            option_a=item.get("option_a", ""),
+                            option_b=item.get("option_b", ""),
+                            option_c=item.get("option_c", ""),
+                            option_d=item.get("option_d", ""),
+                            correct_answer=item.get("correct_answer", "A"),
+                            explanation=item.get("explanation", ""),
+                            category_id=cat_obj.id,
+                            topic_id=top_obj.id,
+                            difficulty=diff_enum,
+                            estimated_time_seconds=item.get("estimated_time_seconds", 45),
+                            is_premium=item.get("is_premium", False),
+                            is_active=True,
+                            source=item.get("source", "Campus Placement Paper"),
+                        )
+                    )
+                    questions_added += 1
+            logger.info(f"Ingested catalog synced: processed {len(ingested_list)} questions from {ingested_catalog_path.name}")
+        except Exception as e:
+            logger.warning(f"Could not load ingested questions catalog: {e}")
 
     db.commit()
-    logger.info(f"Questions synced: {questions_added} new questions added.")
+    logger.info(f"Questions synced: {questions_added} total new questions added.")
 
     # 4. Seed default published tests
     tests_added = 0
