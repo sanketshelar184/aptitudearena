@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -8,6 +9,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.config import get_settings
 from app.models.attempt import TestAttempt
@@ -237,6 +240,25 @@ def fulfill_payment(
 
     db.commit()
     db.refresh(payment)
+
+    # Dispatch payment confirmation email via Brevo
+    try:
+        from app.services.email import send_payment_confirmation_email
+        access_type_label = (
+            f"{product.billing_interval_days or 30}-Day Pro Membership"
+            if product.product_type == ProductType.SUBSCRIPTION
+            else f"{product.question_limit or 20}-Question Practice Pass"
+        )
+        send_payment_confirmation_email(
+            to_email=user.email,
+            to_name=user.full_name,
+            order_id=order_id,
+            product_name=product.name,
+            amount_inr=product.price_paise / 100,
+            access_type=access_type_label,
+        )
+    except Exception as email_err:
+        logger.warning(f"Could not send payment confirmation email to {user.email}: {email_err}")
 
     return PaymentVerificationResponse(
         success=True,

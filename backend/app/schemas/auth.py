@@ -50,3 +50,25 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserRead
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=320)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        email = value.strip().lower()
+        if "@" not in email:
+            raise ValueError("Enter a valid email address")
+        return email
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=20, description="Password reset JWT token")
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class MessageResponse(BaseModel):
+    message: str
+    success: bool = True

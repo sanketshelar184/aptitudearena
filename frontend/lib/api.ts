@@ -321,6 +321,23 @@ export async function getStudentMe(): Promise<User> {
   return request<User>("/auth/me");
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string; success: boolean }> {
+  return request<{ message: string; success: boolean }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string
+): Promise<{ message: string; success: boolean }> {
+  return request<{ message: string; success: boolean }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+}
+
 // Commerce & Products APIs
 export async function getProducts(): Promise<Product[]> {
   return request<Product[]>("/products");

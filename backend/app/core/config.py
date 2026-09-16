@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     # Google Gemini API Key
     gemini_api_key: str | None = None
 
+    # Brevo Transactional Email Service
+    brevo_api_key: str | None = None
+    brevo_sender_email: str = "support@aptitudearena.in"
+    brevo_sender_name: str = "AptitudeArena"
+
+    # Frontend URL (for password reset links and email CTAs)
+    frontend_base_url: str = "http://localhost:3000"
+
     @field_validator("database_url", mode="after")
     @classmethod
     def assemble_db_connection(cls, v: str) -> str:

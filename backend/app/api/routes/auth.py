@@ -6,13 +6,30 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_current_user
 from app.core.config import get_settings
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    create_password_reset_token,
+    decode_password_reset_token,
+    get_password_fingerprint,
+    hash_password,
+    verify_password,
+)
 from app.db.session import get_db
 from app.models.attempt import TestAttempt
 from app.models.commerce import Subscription
 from app.models.enums import SubscriptionStatus, UserRole
 from app.models.user import User
-from app.schemas.auth import AuthResponse, GoogleAuthRequest, LoginRequest, RegisterRequest, UserRead
+from app.schemas.auth import (
+    AuthResponse,
+    ForgotPasswordRequest,
+    GoogleAuthRequest,
+    LoginRequest,
+    MessageResponse,
+    RegisterRequest,
+    ResetPasswordRequest,
+    UserRead,
+)
+from app.services.email import send_password_reset_email
 from app.services.google_auth import verify_google_credential
 from app.services.test_engine import hash_guest_token
 
@@ -127,3 +144,43 @@ def logout() -> None:
 @router.get("/me", response_model=UserRead)
 def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> UserRead:
     return user_to_read(db, user)
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)) -> MessageResponse:
+    user = db.scalar(select(User).where(User.email == payload.email.strip().lower()))
+    if user and user.is_active:
+        reset_token = create_password_reset_token(user.id, user.password_hash)
+        send_password_reset_email(user.email, user.full_name, reset_token)
+
+    return MessageResponse(
+        message="If an account exists with this email address, a password reset link has been sent. Please check your inbox."
+    )
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> MessageResponse:
+    try:
+        user_id, token_fp = decode_password_reset_token(payload.token)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    user = db.get(User, user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User account not found or deactivated.")
+
+    # Check that password hasn't changed since token was issued
+    current_fp = get_password_fingerprint(user.password_hash)
+    if token_fp != current_fp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This password reset link has already been used or expired. Please request a new one.",
+        )
+
+    # Update password
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+
+    return MessageResponse(
+        message="Your password has been successfully updated. You can now sign in with your new password."
+    )
