@@ -294,6 +294,82 @@ def start_test(
     if not test or test.status != TestStatus.PUBLISHED:
         raise HTTPException(status_code=404, detail="Test not found")
 
+    guest_token, is_new = guest_info
+    if is_new:
+        response.set_cookie(
+            key="aa_guest_session",
+            value=guest_token,
+            max_age=86400 * 60,
+            httponly=True,
+            samesite="lax",
+        )
+
+    # Reconnection / Disconnection Recovery: Check for active in-progress attempt to resume
+    active_attempt = None
+    if user:
+        active_attempt = db.scalar(
+            select(TestAttempt)
+            .where(
+                TestAttempt.test_id == test.id,
+                TestAttempt.user_id == user.id,
+                TestAttempt.status == AttemptStatus.IN_PROGRESS,
+            )
+            .order_by(TestAttempt.created_at.desc())
+        )
+    else:
+        token_hash = hash_guest_token(guest_token)
+        active_attempt = db.scalar(
+            select(TestAttempt)
+            .where(
+                TestAttempt.test_id == test.id,
+                TestAttempt.guest_token_hash == token_hash,
+                TestAttempt.status == AttemptStatus.IN_PROGRESS,
+            )
+            .order_by(TestAttempt.created_at.desc())
+        )
+
+    if active_attempt and utc_now() < as_utc(active_attempt.expires_at):
+        # Resume existing active test without deducting any new pass
+        active_attempt.guest_token_hash = hash_guest_token(guest_token)
+        db.commit()
+
+        answers = list(
+            db.scalars(
+                select(TestAnswer)
+                .where(TestAnswer.attempt_id == active_attempt.id)
+                .order_by(TestAnswer.position)
+            ).all()
+        )
+        questions_map = {
+            q.id: q
+            for q in db.scalars(select(Question).where(Question.id.in_([a.question_id for a in answers]))).all()
+        }
+        ordered_items = [(a, questions_map[a.question_id]) for a in answers if a.question_id in questions_map]
+
+        return StartAttemptResponse(
+            attempt_id=active_attempt.id,
+            test_id=test.id,
+            test_name=test.name,
+            guest_token=guest_token,
+            expires_at=active_attempt.expires_at,
+            duration_seconds=test.duration_seconds,
+            total_questions=active_attempt.total_questions,
+            questions=[
+                TestQuestionPublic(
+                    id=q.id,
+                    position=ans.position,
+                    question_text=q.question_text,
+                    option_a=q.option_a,
+                    option_b=q.option_b,
+                    option_c=q.option_c,
+                    option_d=q.option_d,
+                    selected_answer=ans.selected_answer,
+                    difficulty=q.difficulty,
+                )
+                for ans, q in ordered_items
+            ],
+        )
+
     if not test.is_free:
         if not user:
             raise HTTPException(
@@ -307,16 +383,6 @@ def start_test(
                 detail="Payment required. Please purchase a test pass or subscribe to Pro.",
             )
         consume_user_test_access(db, user, test)
-
-    guest_token, is_new = guest_info
-    if is_new:
-        response.set_cookie(
-            key="aa_guest_session",
-            value=guest_token,
-            max_age=86400 * 60,
-            httponly=True,
-            samesite="lax",
-        )
 
     attempt, token, questions = start_guest_attempt(
         db,
@@ -398,10 +464,21 @@ def submit_attempt(
 @router.get("/attempts/{attempt_id}/result", response_model=AttemptReview)
 def get_attempt_result(
     attempt_id: UUID,
-    guest_token: str = Query(min_length=20),
+    guest_token: str | None = Query(default=None),
+    user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ) -> AttemptReview:
-    return review_attempt(db, owned_attempt(db, attempt_id, guest_token))
+    attempt = db.get(TestAttempt, attempt_id)
+    if not attempt:
+        raise HTTPException(status_code=404, detail="Attempt not found")
+
+    if user and attempt.user_id == user.id:
+        return review_attempt(db, attempt)
+
+    if guest_token and attempt.guest_token_hash and secrets.compare_digest(attempt.guest_token_hash, hash_guest_token(guest_token)):
+        return review_attempt(db, attempt)
+
+    raise HTTPException(status_code=403, detail="Not authorized to view this exam result.")
 
 
 @router.get("/attempts/{attempt_id}", response_model=StartAttemptResponse)

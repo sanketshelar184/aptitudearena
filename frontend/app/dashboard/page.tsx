@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Trophy,
@@ -19,13 +19,16 @@ import {
   Award,
   ChevronRight,
   LogOut,
+  Ticket,
 } from "lucide-react";
 import { getStudentDashboard, studentLogout } from "@/lib/api";
 import { StudentDashboardData } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paymentSuccess = searchParams.get("payment_success") === "true";
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,12 +82,6 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-slate-50 font-sans text-ink">
-        <nav className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <span className="text-base font-bold text-ink">AptitudeArena</span>
-            <div className="h-6 w-20 bg-slate-200 rounded animate-pulse" />
-          </div>
-        </nav>
         <Navbar />
         <div className="mx-auto max-w-6xl px-6 py-10 space-y-8 animate-pulse">
           <div className="h-8 w-64 bg-slate-200 rounded" />
@@ -121,39 +118,35 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
-      {/* Top Navbar */}
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white font-black text-xs">
-                AA
-              </span>
-              <span className="text-base font-black tracking-tight text-ink">
-                Aptitude<span className="text-brand">Arena</span>
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <Link href="/tests" className="text-slate-600 hover:text-ink transition">
-              Test Catalog
-            </Link>
-            <Link href="/pricing" className="text-slate-600 hover:text-ink transition">
-              Pricing
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 hover:bg-slate-50 transition"
-            >
-              <LogOut size={13} />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </nav>
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
+        {/* Payment Success Celebration Banner */}
+        {paymentSuccess && (
+          <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50/90 p-4 sm:p-5 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-3">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <p className="font-extrabold text-sm sm:text-base text-emerald-950">
+                  Payment Confirmed! Your Pass is Active
+                </p>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  Your payment was verified successfully. You have received a <strong>Universal Practice Pass</strong> that can be used on <strong>any test or sprint</strong> in our catalog!
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/tests"
+              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition"
+            >
+              <span>Browse Tests & Start Now</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
+
         {/* Welcome Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-6">
           <div>
@@ -183,22 +176,69 @@ export default function DashboardPage() {
                   <span className="text-[11px] text-purple-700">Unlimited Test Access</span>
                 </div>
               </div>
+            ) : data.available_test_credits > 0 ? (
+              <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 px-4 text-xs shadow-2xs">
+                <Ticket size={18} className="text-emerald-600 shrink-0" />
+                <div>
+                  <span className="font-bold text-emerald-900 block">
+                    {data.available_test_credits} Active {data.available_test_credits === 1 ? "Pass" : "Passes"}
+                  </span>
+                  <span className="text-[11px] text-emerald-700">Universal Access</span>
+                </div>
+                <Link
+                  href="/pricing"
+                  className="rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-800 transition ml-1"
+                >
+                  + Add More
+                </Link>
+              </div>
             ) : (
               <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 px-4 text-xs shadow-2xs">
                 <div>
                   <span className="font-bold text-slate-800 block">Free Account</span>
-                  <span className="text-[11px] text-slate-500">Single passes or free tests</span>
+                  <span className="text-[11px] text-slate-500">0 passes remaining</span>
                 </div>
                 <Link
                   href="/pricing"
                   className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition"
                 >
-                  Upgrade ₹99
+                  Buy ₹10 Pass
                 </Link>
               </div>
             )}
           </div>
         </div>
+
+        {/* Active Test Pass Notification Card */}
+        {data.available_test_credits > 0 && (
+          <div className="rounded-2xl border-2 border-emerald-500/30 bg-gradient-to-r from-emerald-50 via-teal-50/40 to-white p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xs">
+                <Ticket size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-ink">
+                    {data.available_test_credits} Test {data.available_test_credits === 1 ? "Pass" : "Passes"} Available
+                  </h3>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 uppercase tracking-wide border border-emerald-200">
+                    Universal Pass
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  You can use your pass on <strong>any test or sprint</strong> in the catalog (Quantitative, Logical, Verbal, or Technical). Exactly 1 pass is consumed per attempt.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/tests"
+              className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition"
+            >
+              <span>Select Test & Practice</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        )}
 
         {/* Practice Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -428,5 +468,19 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
+          <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }

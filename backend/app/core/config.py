@@ -43,7 +43,7 @@ class Settings(BaseSettings):
             return v.replace("postgresql://", "postgresql+psycopg://", 1)
         return v
 
-    model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
 
 
 @lru_cache

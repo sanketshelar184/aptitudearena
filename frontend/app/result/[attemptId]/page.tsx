@@ -35,15 +35,17 @@ function ResultPageContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    setIsLoggedIn(Boolean(getToken()));
+    const authToken = getToken();
+    const isUserLoggedIn = Boolean(authToken);
+    setIsLoggedIn(isUserLoggedIn);
 
     let token = searchParams.get("token");
     if (!token && typeof window !== "undefined") {
       token = sessionStorage.getItem(`attempt_${attemptId}_token`);
     }
 
-    if (!token) {
-      setError("This result link is missing its secure access token. Please access from your test session.");
+    if (!token && !isUserLoggedIn) {
+      setError("This result link requires you to log in or access from your active test session.");
       return;
     }
 

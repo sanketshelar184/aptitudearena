@@ -105,3 +105,4 @@ def test_invalid_reset_token_fails(auth_client: tuple[TestClient, User]):
         json={"token": "invalid.tampered.token1234567890", "new_password": "NewSecretPassword456!"},
     )
     assert res.status_code == 400
+

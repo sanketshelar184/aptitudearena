@@ -250,3 +250,4 @@ def send_payment_confirmation_email(
 </html>"""
 
     return send_brevo_email(to_email, to_name, subject, html_content, text_content)
+

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Clock,
   HelpCircle,
@@ -11,15 +11,21 @@ import {
   Sparkles,
   Loader2,
   SlidersHorizontal,
+  Ticket,
+  CheckCircle2,
 } from "lucide-react";
-import { getPublishedTests, startTest } from "@/lib/api";
+import { getPublishedTests, startTest, getUserMembership } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { Test } from "@/types/test";
+import { MembershipStatus } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
 
-export default function TestsCatalogPage() {
+function TestsCatalogContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const passActivated = searchParams.get("pass_activated") === "true";
   const [tests, setTests] = useState<Test[]>([]);
+  const [membership, setMembership] = useState<MembershipStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingTestId, setStartingTestId] = useState<string | null>(null);
@@ -32,6 +38,12 @@ export default function TestsCatalogPage() {
         setError(err instanceof Error ? err.message : "Unable to load test catalog.");
       })
       .finally(() => setIsLoading(false));
+
+    if (getToken()) {
+      getUserMembership()
+        .then(setMembership)
+        .catch(() => {});
+    }
   }, []);
 
   const handleStartPaidTest = async (testId: string) => {
@@ -103,6 +115,64 @@ export default function TestsCatalogPage() {
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
+        {/* Pass Activation Celebration Banner */}
+        {passActivated && (
+          <div className="mb-8 rounded-2xl border-2 border-emerald-300 bg-emerald-50/90 p-4 sm:p-5 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-3">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <p className="font-extrabold text-sm sm:text-base text-emerald-950">
+                  🎉 Practice Pass Active & Ready!
+                </p>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  Your pass has been loaded. Click <strong>&ldquo;Use Pass & Start&rdquo;</strong> on <strong>ANY test below</strong> to begin your timed attempt.
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+              Universal Pass
+            </span>
+          </div>
+        )}
+
+        {/* Existing Active Passes Banner */}
+        {!passActivated && membership && (membership.available_test_credits > 0 || membership.is_subscribed) && (
+          <div className={`mb-8 rounded-2xl border p-4 text-xs flex items-center justify-between gap-4 ${
+            membership.is_subscribed
+              ? "border-purple-200 bg-purple-50/70 text-purple-950"
+              : "border-emerald-200 bg-emerald-50/70 text-emerald-950"
+          }`}>
+            <div className="flex items-center gap-3">
+              {membership.is_subscribed ? (
+                <Sparkles size={20} className="text-purple-600 shrink-0" />
+              ) : (
+                <Ticket size={20} className="text-emerald-600 shrink-0" />
+              )}
+              <div>
+                <p className="font-bold text-sm">
+                  {membership.is_subscribed
+                    ? "⭐ Pro Membership Active — Unlimited Access"
+                    : `🎟️ You have ${membership.available_test_credits} Active Test ${
+                        membership.available_test_credits === 1 ? "Pass" : "Passes"
+                      }`}
+                </p>
+                <p className="text-[11px] opacity-85 mt-0.5">
+                  {membership.is_subscribed
+                    ? "You can take any test or sprint without limit. No passes are deducted."
+                    : "Universal Pass: Click 'Use Pass & Start' on any test below to begin your exam."}
+                </p>
+              </div>
+            </div>
+            {!membership.is_subscribed && (
+              <Link href="/pricing" className="shrink-0 text-[11px] font-bold text-emerald-800 hover:underline">
+                + Buy More Passes
+              </Link>
+            )}
+          </div>
+        )}
+
         {/* Page Hero */}
         <div className="max-w-2xl">
           <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-brand border border-blue-200 uppercase tracking-wider">
@@ -292,7 +362,11 @@ export default function TestsCatalogPage() {
                         <button
                           onClick={() => handleStartPaidTest(t.id)}
                           disabled={startingTestId === t.id}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition disabled:opacity-50 shadow-2xs"
+                          className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50 shadow-2xs ${
+                            (membership?.available_test_credits ?? 0) > 0 || membership?.is_subscribed
+                              ? "bg-emerald-600 hover:bg-emerald-700"
+                              : "bg-slate-900 hover:bg-slate-800"
+                          }`}
                         >
                           {startingTestId === t.id ? (
                             <>
@@ -301,7 +375,13 @@ export default function TestsCatalogPage() {
                             </>
                           ) : (
                             <>
-                              <span>Start Test</span>
+                              <span>
+                                {membership?.is_subscribed
+                                  ? "Start Test (Pro)"
+                                  : (membership?.available_test_credits ?? 0) > 0
+                                  ? "Use Pass & Start"
+                                  : "Start Test"}
+                              </span>
                               <ArrowRight size={13} />
                             </>
                           )}
@@ -316,5 +396,19 @@ export default function TestsCatalogPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function TestsCatalogPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
+          <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+        </div>
+      }
+    >
+      <TestsCatalogContent />
+    </Suspense>
   );
 }

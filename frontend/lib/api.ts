@@ -257,9 +257,10 @@ export async function getAttempt(attemptId: string, guestToken: string): Promise
   );
 }
 
-export async function getAttemptResult(attemptId: string, guestToken: string): Promise<AttemptReview> {
+export async function getAttemptResult(attemptId: string, guestToken?: string | null): Promise<AttemptReview> {
+  const query = guestToken ? `?guest_token=${encodeURIComponent(guestToken)}` : "";
   return request<AttemptReview>(
-    `/attempts/${encodeURIComponent(attemptId)}/result?guest_token=${encodeURIComponent(guestToken)}`
+    `/attempts/${encodeURIComponent(attemptId)}/result${query}`
   );
 }
 

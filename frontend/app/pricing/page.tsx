@@ -113,11 +113,7 @@ export default function PricingPage() {
                   payment_id: response.razorpay_payment_id,
                   signature: response.razorpay_signature,
                 });
-                setPaymentSuccessMessage("Payment verified successfully! Access granted.");
-                setTimeout(() => {
-                  setActiveOrder(null);
-                  router.push("/dashboard");
-                }, 1200);
+                setPaymentSuccessMessage("Payment verified successfully! Your pass is active and ready to use.");
               } catch (vErr: unknown) {
                 setModalError(vErr instanceof Error ? vErr.message : "Payment verification failed.");
               } finally {
@@ -187,22 +183,6 @@ export default function PricingPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
-      {/* Navbar */}
-      <nav className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-xl font-bold tracking-tight text-ink">
-            AptitudeArena
-          </Link>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <Link href="/tests" className="text-slate-600 hover:text-ink">
-              Test Catalog
-            </Link>
-            <Link href="/dashboard" className="text-brand hover:underline">
-              Student Dashboard
-            </Link>
-          </div>
-        </div>
-      </nav>
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-12">
@@ -428,11 +408,50 @@ export default function PricingPage() {
             </div>
 
             {paymentSuccessMessage ? (
-              <div className="py-8 text-center">
-                <CheckCircle2 size={40} className="mx-auto text-emerald-600 mb-3" />
-                <h4 className="text-base font-bold text-ink">Payment Successful!</h4>
-                <p className="text-xs text-slate-500 mt-1">{paymentSuccessMessage}</p>
-                <p className="text-[11px] text-slate-400 mt-3">Redirecting to your dashboard...</p>
+              <div className="py-6 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-3 shadow-2xs">
+                  <CheckCircle2 size={32} />
+                </div>
+                <h4 className="text-lg font-bold text-ink">
+                  {activeOrder.product_type === "SUBSCRIPTION" ? "Pro Membership Activated!" : "Test Pass Added to Your Account!"}
+                </h4>
+
+                <div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-xs text-emerald-900 text-left">
+                  <p className="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+                    <Sparkles size={14} className="text-emerald-600 shrink-0" />
+                    {activeOrder.product_type === "SUBSCRIPTION"
+                      ? "Unlimited Access Unlocked"
+                      : "Universal Practice Pass Ready"}
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-emerald-800">
+                    {activeOrder.product_type === "SUBSCRIPTION"
+                      ? "You now have 30 days of unlimited access to every test, sprint, and diagnostic assessment on AptitudeArena."
+                      : "You have 1 active practice pass! You can use this pass to unlock and solve ANY test in our catalog (Quantitative, Logical Reasoning, Verbal, or Company Sprints)."}
+                  </p>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-2.5">
+                  <button
+                    onClick={() => {
+                      setActiveOrder(null);
+                      router.push("/tests?pass_activated=true");
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand py-3 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition"
+                  >
+                    <span>Browse Tests & Use Pass Now</span>
+                    <ArrowRight size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveOrder(null);
+                      router.push("/dashboard?payment_success=true");
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <span>Go to Student Dashboard</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="py-4">
