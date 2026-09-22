@@ -1,5 +1,6 @@
 import hashlib
 import random
+import re
 import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -20,6 +21,22 @@ from app.schemas.test_engine import (
     SpeedPerformance,
     TopicPerformance,
 )
+
+
+def _normalize_stem(text: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9]", "", (text or "").lower())
+    return cleaned[:45] if len(cleaned) >= 15 else (text or "").strip().lower()
+
+
+def _unique_by_stem(questions: list[Question]) -> list[Question]:
+    seen: set[str] = set()
+    result: list[Question] = []
+    for q in questions:
+        stem = _normalize_stem(q.question_text)
+        if stem not in seen:
+            seen.add(stem)
+            result.append(q)
+    return result
 
 
 def utc_now() -> datetime:
@@ -88,6 +105,7 @@ def selected_questions(
             eligible = diff_eligible if len(diff_eligible) >= test.question_count else list(db.scalars(query).all())
         else:
             eligible = list(db.scalars(query).all())
+        eligible = _unique_by_stem(eligible)
 
         unseen = [q for q in eligible if q.id not in exclude]
         if len(unseen) >= test.question_count:
@@ -98,13 +116,17 @@ def selected_questions(
         seen_candidates = [q for q in eligible if q.id in exclude and q.id not in {x.id for x in selected_pool}]
         needed = test.question_count - len(selected_pool)
         if len(seen_candidates) < needed:
-            raise HTTPException(
-                status_code=409,
-                detail="Not enough eligible questions available for this topic test.",
-            )
+            if not eligible:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Not enough eligible questions available for this topic test.",
+                )
+            selected_pool.extend(seen_candidates)
+            random.shuffle(selected_pool)
+            return _unique_by_stem(selected_pool)[: test.question_count]
         selected_pool.extend(random.sample(seen_candidates, needed))
         random.shuffle(selected_pool)
-        return selected_pool
+        return _unique_by_stem(selected_pool)[: test.question_count]
 
     # Case B: Category Test
     if test.category_id:
@@ -114,6 +136,7 @@ def selected_questions(
             eligible = diff_eligible if len(diff_eligible) >= test.question_count else list(db.scalars(query).all())
         else:
             eligible = list(db.scalars(query).all())
+        eligible = _unique_by_stem(eligible)
 
         unseen = [q for q in eligible if q.id not in exclude]
         if len(unseen) >= test.question_count:
@@ -123,13 +146,17 @@ def selected_questions(
         seen_candidates = [q for q in eligible if q.id in exclude and q.id not in {x.id for x in selected_pool}]
         needed = test.question_count - len(selected_pool)
         if len(seen_candidates) < needed:
-            raise HTTPException(
-                status_code=409,
-                detail="Not enough eligible questions available for this category test.",
-            )
+            if not eligible:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Not enough eligible questions available for this category test.",
+                )
+            selected_pool.extend(seen_candidates)
+            random.shuffle(selected_pool)
+            return _unique_by_stem(selected_pool)[: test.question_count]
         selected_pool.extend(random.sample(seen_candidates, needed))
         random.shuffle(selected_pool)
-        return selected_pool
+        return _unique_by_stem(selected_pool)[: test.question_count]
 
     # Case C: Mixed Test (select evenly across active categories prioritizing unseen)
     categories = list(db.scalars(select(Category).order_by(Category.name)).all())
@@ -151,6 +178,7 @@ def selected_questions(
                 cat_eligible = diff_eligible if len(diff_eligible) >= quota else list(db.scalars(cat_query).all())
             else:
                 cat_eligible = list(db.scalars(cat_query).all())
+            cat_eligible = _unique_by_stem(cat_eligible)
 
             # Prioritize unseen questions in this category
             cat_unseen = [q for q in cat_eligible if q.id not in exclude and q.id not in seen_ids]
@@ -175,7 +203,7 @@ def selected_questions(
         fallback_query = select(Question).where(*base_filter)
         if test.difficulty:
             fallback_query = fallback_query.where(Question.difficulty == test.difficulty)
-        all_fallback = list(db.scalars(fallback_query).all())
+        all_fallback = _unique_by_stem(list(db.scalars(fallback_query).all()))
 
         fallback_unseen = [q for q in all_fallback if q.id not in seen_ids and q.id not in exclude]
         shortfall = test.question_count - len(selected)
@@ -194,7 +222,7 @@ def selected_questions(
             selected.extend(random.sample(fallback_seen, remaining_shortfall))
 
     random.shuffle(selected)
-    return selected[: test.question_count]
+    return _unique_by_stem(selected)[: test.question_count]
 
 
 def start_guest_attempt(
@@ -355,6 +383,14 @@ def review_attempt(db: Session, attempt: TestAttempt) -> AttemptReview:
                 is_correct=answer.is_correct,
                 explanation=question.explanation,
                 difficulty=question.difficulty,
+                image_url=question.image_url,
+                option_images={
+                    "A": question.option_a_image_url,
+                    "B": question.option_b_image_url,
+                    "C": question.option_c_image_url,
+                    "D": question.option_d_image_url,
+                } if any([question.option_a_image_url, question.option_b_image_url, question.option_c_image_url, question.option_d_image_url]) else None,
+                explanation_image_url=question.explanation_image_url,
             )
         )
 

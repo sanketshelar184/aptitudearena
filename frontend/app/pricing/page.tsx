@@ -14,9 +14,10 @@ import {
   CreditCard,
   CheckCircle2,
   XCircle,
+  Crown,
 } from "lucide-react";
 import { getProducts, createPaymentOrder, verifyPayment } from "@/lib/api";
-import { getToken, getUser } from "@/lib/auth";
+import { getToken, getUser, isAdmin } from "@/lib/auth";
 import { Product, CreateOrderResponse } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
 
@@ -198,6 +199,29 @@ export default function PricingPage() {
             No expensive ₹10,000 coaching packages. Practice real placement questions with full solutions for ₹10 per test or ₹99/month.
           </p>
         </div>
+
+        {/* Admin All-Access Notice */}
+        {isAdmin() && (
+          <div className="mt-6 mb-2 max-w-2xl mx-auto rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-4 sm:p-5 text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <Crown size={24} className="text-amber-600 shrink-0" />
+              <div>
+                <p className="font-bold text-sm text-amber-900">
+                  👑 You are logged in as Administrator
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  All tests and platform features are 100% free and unlocked for your account. You don&apos;t need to purchase passes to check the site.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/tests"
+              className="shrink-0 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition"
+            >
+              Take Free Tests →
+            </Link>
+          </div>
+        )}
 
         {error && (
           <div className="mt-6 max-w-md mx-auto rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">

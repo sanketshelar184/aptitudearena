@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -11,8 +11,18 @@ import {
   Sparkles,
   Loader2,
   SlidersHorizontal,
-  Ticket,
   CheckCircle2,
+  Crown,
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  Calculator,
+  Brain,
+  BookOpen,
+  Code2,
+  Building2,
+  Layers,
+  Check,
 } from "lucide-react";
 import { getPublishedTests, startTest, getUserMembership } from "@/lib/api";
 import { getToken } from "@/lib/auth";
@@ -20,16 +30,151 @@ import { Test } from "@/types/test";
 import { MembershipStatus } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
 
+interface FolderDefinition {
+  key: string;
+  name: string;
+  shortName: string;
+  description: string;
+  badgeColor: string;
+  iconBg: string;
+  borderColor: string;
+  accentBg: string;
+  icon: typeof Calculator;
+  tags: string[];
+}
+
+const FOLDERS: FolderDefinition[] = [
+  {
+    key: "aptitude",
+    name: "Quantitative Aptitude",
+    shortName: "Aptitude",
+    description: "Speed arithmetic, percentages, profit & loss, ratios, time & work, geometry, and numerical problems.",
+    badgeColor: "text-blue-700 bg-blue-50 border-blue-200",
+    iconBg: "bg-blue-600 text-white",
+    borderColor: "border-blue-200 hover:border-blue-400",
+    accentBg: "bg-blue-50/60",
+    icon: Calculator,
+    tags: ["Percentages", "Time & Work", "Ratios", "Geometry", "Speed Math"],
+  },
+  {
+    key: "logical",
+    name: "Logical Reasoning",
+    shortName: "Reasoning",
+    description: "Analytical deduction, seating arrangements, syllogisms, blood relations, and non-verbal puzzles.",
+    badgeColor: "text-purple-700 bg-purple-50 border-purple-200",
+    iconBg: "bg-purple-600 text-white",
+    borderColor: "border-purple-200 hover:border-purple-400",
+    accentBg: "bg-purple-50/60",
+    icon: Brain,
+    tags: ["Puzzles", "Syllogisms", "Non-Verbal", "Blood Relations", "Sequences"],
+  },
+  {
+    key: "verbal",
+    name: "Verbal Ability",
+    shortName: "Verbal",
+    description: "Reading comprehension, grammatical rules, error spotting, vocabulary, and sentence rearrangement.",
+    badgeColor: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    iconBg: "bg-emerald-600 text-white",
+    borderColor: "border-emerald-200 hover:border-emerald-400",
+    accentBg: "bg-emerald-50/60",
+    icon: BookOpen,
+    tags: ["Grammar", "Reading Comprehension", "Vocabulary", "Sentence Correction"],
+  },
+  {
+    key: "technical",
+    name: "Technical CS / IT",
+    shortName: "Technical",
+    description: "C/C++, OOPs concepts, Data Structures, Algorithms, DBMS, Operating Systems, and coding questions.",
+    badgeColor: "text-sky-700 bg-sky-50 border-sky-200",
+    iconBg: "bg-sky-600 text-white",
+    borderColor: "border-sky-200 hover:border-sky-400",
+    accentBg: "bg-sky-50/60",
+    icon: Code2,
+    tags: ["C / C++", "OOPs", "Data Structures", "DBMS", "Operating Systems"],
+  },
+  {
+    key: "company",
+    name: "Company Placement Sprints",
+    shortName: "Company Papers",
+    description: "Official pattern-calibrated tests for TCS NQT, Infosys DSE/SE, Wipro NLTH, and Tech Mahindra.",
+    badgeColor: "text-amber-700 bg-amber-50 border-amber-200",
+    iconBg: "bg-amber-600 text-white",
+    borderColor: "border-amber-200 hover:border-amber-400",
+    accentBg: "bg-amber-50/60",
+    icon: Building2,
+    tags: ["TCS NQT", "Infosys DSE/SE", "Wipro NLTH", "Tech Mahindra"],
+  },
+];
+
+function testMatchesFolder(test: Test, folderKey: string): boolean {
+  if (folderKey === "ALL") return true;
+  const name = test.name.toLowerCase();
+  const cat = (test.category_name || "").toLowerCase();
+
+  if (folderKey === "aptitude") {
+    return (
+      test.folder_key === "aptitude" ||
+      cat.includes("quantitative") ||
+      name.includes("quantitative") ||
+      name.includes("speed test") ||
+      name.includes("numerical")
+    );
+  }
+  if (folderKey === "logical") {
+    return (
+      test.folder_key === "logical" ||
+      cat.includes("logical") ||
+      name.includes("logical") ||
+      name.includes("deduction") ||
+      name.includes("puzzles")
+    );
+  }
+  if (folderKey === "verbal") {
+    return (
+      test.folder_key === "verbal" ||
+      cat.includes("verbal") ||
+      name.includes("verbal") ||
+      name.includes("grammar") ||
+      name.includes("reading")
+    );
+  }
+  if (folderKey === "technical") {
+    return (
+      test.folder_key === "technical" ||
+      cat.includes("technical") ||
+      name.includes("technical") ||
+      name.includes("c/c++") ||
+      name.includes("systems") ||
+      name.includes("engineer")
+    );
+  }
+  if (folderKey === "company") {
+    return (
+      Boolean(test.company_name) ||
+      test.folder_key === "company" ||
+      name.includes("tcs") ||
+      name.includes("infosys") ||
+      name.includes("wipro") ||
+      name.includes("mahindra")
+    );
+  }
+  return false;
+}
+
 function TestsCatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const passActivated = searchParams.get("pass_activated") === "true";
+  const initialFolder = searchParams.get("folder") || "ALL";
+
   const [tests, setTests] = useState<Test[]>([]);
   const [membership, setMembership] = useState<MembershipStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingTestId, setStartingTestId] = useState<string | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<string>(initialFolder);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("ALL");
+  const [companySubFilter, setCompanySubFilter] = useState<string>("ALL");
 
   useEffect(() => {
     getPublishedTests()
@@ -68,8 +213,59 @@ function TestsCatalogContent() {
     }
   };
 
-  const freeTest = tests.find((t) => t.is_free);
-  const paidTests = tests.filter((t) => !t.is_free);
+  const isAdmin = membership?.role === "ADMIN";
+
+  const freeTest = useMemo(() => {
+    return tests.find((t) => t.name.toLowerCase().includes("diagnostic")) || tests.find((t) => t.is_free);
+  }, [tests]);
+
+  const catalogTests = useMemo(() => {
+    return tests.filter((t) => t.id !== freeTest?.id);
+  }, [tests, freeTest]);
+
+  // Folder selection helper with URL update
+  const handleSelectFolder = (folderKey: string) => {
+    setSelectedFolder(folderKey);
+    setCompanySubFilter("ALL");
+    const params = new URLSearchParams(window.location.search);
+    if (folderKey === "ALL") {
+      params.delete("folder");
+    } else {
+      params.set("folder", folderKey);
+    }
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+    window.history.pushState({}, "", newUrl);
+  };
+
+  const activeFolderDef = useMemo(() => {
+    return FOLDERS.find((f) => f.key === selectedFolder) || null;
+  }, [selectedFolder]);
+
+  // Filter tests by folder, difficulty, and company
+  const displayedTests = useMemo(() => {
+    return catalogTests.filter((t) => {
+      // 1. Folder match
+      if (!testMatchesFolder(t, selectedFolder)) return false;
+
+      // 2. Difficulty match
+      if (selectedDifficulty !== "ALL") {
+        const diff = (t.difficulty || "MEDIUM").toUpperCase();
+        if (diff !== selectedDifficulty) return false;
+      }
+
+      // 3. Company sub-filter (only active if in company folder)
+      if (selectedFolder === "company" && companySubFilter !== "ALL") {
+        const name = t.name.toLowerCase();
+        const comp = (t.company_name || "").toLowerCase();
+        if (companySubFilter === "TCS" && !name.includes("tcs") && !comp.includes("tcs")) return false;
+        if (companySubFilter === "Infosys" && !name.includes("infosys") && !comp.includes("infosys")) return false;
+        if (companySubFilter === "Wipro" && !name.includes("wipro") && !comp.includes("wipro")) return false;
+        if (companySubFilter === "Tech Mahindra" && !name.includes("mahindra") && !comp.includes("mahindra")) return false;
+      }
+
+      return true;
+    });
+  }, [catalogTests, selectedFolder, selectedDifficulty, companySubFilter]);
 
   const difficulties = [
     { key: "ALL", label: "All Difficulties" },
@@ -77,12 +273,6 @@ function TestsCatalogContent() {
     { key: "MEDIUM", label: "🟡 Medium (Placement Standard)" },
     { key: "HARD", label: "🔴 Hard (Advanced)" },
   ];
-
-  const filteredTests = paidTests.filter((t) => {
-    if (selectedDifficulty === "ALL") return true;
-    const diff = (t.difficulty || "MEDIUM").toUpperCase();
-    return diff === selectedDifficulty;
-  });
 
   const renderDifficultyBadge = (diff?: string | null) => {
     const val = (diff || "MEDIUM").toUpperCase();
@@ -110,11 +300,121 @@ function TestsCatalogContent() {
     );
   };
 
+  const renderTestCard = (t: Test) => (
+    <div
+      key={t.id}
+      className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition"
+    >
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 truncate max-w-[170px]">
+            {t.company_name ? `🏢 ${t.company_name}` : t.category_name || "General Aptitude"}
+          </span>
+          {renderDifficultyBadge(t.difficulty)}
+        </div>
+
+        <h3 className="mt-3 text-base font-bold text-ink leading-snug">
+          {t.name}
+        </h3>
+        <p className="mt-1.5 text-xs text-slate-500 line-clamp-2">
+          {t.description ||
+            "Timed targeted questions designed to improve speed and eliminate recurring mistakes."}
+        </p>
+
+        <div className="mt-4 flex items-center gap-4 text-xs text-slate-600 border-t border-slate-100 pt-3">
+          <span className="inline-flex items-center gap-1">
+            <HelpCircle size={14} className="text-slate-400" />
+            {t.question_count} Qs
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Clock size={14} className="text-slate-400" />
+            {Math.round(t.duration_seconds / 60)} mins
+          </span>
+          <span className="inline-flex items-center gap-1 font-semibold text-ink ml-auto">
+            {isAdmin ? (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <Crown size={12} className="text-amber-500" /> Free (Admin)
+              </span>
+            ) : t.price_inr > 0 ? (
+              `₹${t.price_inr}`
+            ) : (
+              <span className="text-emerald-600 font-bold">Free</span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+        <span className="text-[11px] text-slate-400">
+          {t.negative_marking_ratio > 0
+            ? `-${t.negative_marking_ratio} negative mark`
+            : "No negative marks"}
+        </span>
+        <button
+          onClick={() => handleStartPaidTest(t.id)}
+          disabled={startingTestId === t.id}
+          className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50 shadow-2xs ${
+            isAdmin
+              ? "bg-amber-600 hover:bg-amber-700"
+              : (membership?.available_test_credits ?? 0) > 0 || membership?.is_subscribed
+              ? "bg-emerald-600 hover:bg-emerald-700"
+              : "bg-slate-900 hover:bg-slate-800"
+          }`}
+        >
+          {startingTestId === t.id ? (
+            <>
+              <Loader2 size={13} className="animate-spin" />
+              <span>Starting...</span>
+            </>
+          ) : (
+            <>
+              <span>
+                {isAdmin
+                  ? "Start Test (Admin Free)"
+                  : membership?.is_subscribed
+                  ? "Start Test (Pro)"
+                  : (membership?.available_test_credits ?? 0) > 0
+                  ? "Use Pass & Start"
+                  : "Start Test"}
+              </span>
+              <ArrowRight size={13} />
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-ink">
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
+        {/* Admin All-Access Banner */}
+        {isAdmin && (
+          <div className="mb-8 rounded-2xl border-2 border-amber-300 bg-linear-to-r from-amber-50 via-orange-50 to-amber-50 p-4 sm:p-5 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs">
+                <Crown size={24} />
+              </div>
+              <div>
+                <p className="font-extrabold text-sm sm:text-base text-amber-950 flex items-center gap-2">
+                  Admin All-Access Enabled
+                  <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-900 border border-amber-300">
+                    Free For Admin
+                  </span>
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  All tests, placement sprints, and visual exams are completely free and unlocked for your admin account. You can start and inspect any exam without purchasing passes.
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 border border-amber-300">
+              👑 Unrestricted Testing
+            </span>
+          </div>
+        )}
+
         {/* Pass Activation Celebration Banner */}
         {passActivated && (
           <div className="mb-8 rounded-2xl border-2 border-emerald-300 bg-emerald-50/90 p-4 sm:p-5 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-3">
@@ -131,45 +431,6 @@ function TestsCatalogContent() {
                 </p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-              Universal Pass
-            </span>
-          </div>
-        )}
-
-        {/* Existing Active Passes Banner */}
-        {!passActivated && membership && (membership.available_test_credits > 0 || membership.is_subscribed) && (
-          <div className={`mb-8 rounded-2xl border p-4 text-xs flex items-center justify-between gap-4 ${
-            membership.is_subscribed
-              ? "border-purple-200 bg-purple-50/70 text-purple-950"
-              : "border-emerald-200 bg-emerald-50/70 text-emerald-950"
-          }`}>
-            <div className="flex items-center gap-3">
-              {membership.is_subscribed ? (
-                <Sparkles size={20} className="text-purple-600 shrink-0" />
-              ) : (
-                <Ticket size={20} className="text-emerald-600 shrink-0" />
-              )}
-              <div>
-                <p className="font-bold text-sm">
-                  {membership.is_subscribed
-                    ? "⭐ Pro Membership Active — Unlimited Access"
-                    : `🎟️ You have ${membership.available_test_credits} Active Test ${
-                        membership.available_test_credits === 1 ? "Pass" : "Passes"
-                      }`}
-                </p>
-                <p className="text-[11px] opacity-85 mt-0.5">
-                  {membership.is_subscribed
-                    ? "You can take any test or sprint without limit. No passes are deducted."
-                    : "Universal Pass: Click 'Use Pass & Start' on any test below to begin your exam."}
-                </p>
-              </div>
-            </div>
-            {!membership.is_subscribed && (
-              <Link href="/pricing" className="shrink-0 text-[11px] font-bold text-emerald-800 hover:underline">
-                + Buy More Passes
-              </Link>
-            )}
           </div>
         )}
 
@@ -182,7 +443,7 @@ function TestsCatalogContent() {
             Aptitude Tests & Sprints
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Engineered to simulate real TCS, Infosys, Wipro, Cognizant, and product-company placement exams. Choose a difficulty level or specific test to begin.
+            Engineered to simulate real TCS, Infosys, Wipro, Cognizant, and product-company placement exams. Choose a folder below to explore tests by domain or company.
           </p>
         </div>
 
@@ -215,7 +476,7 @@ function TestsCatalogContent() {
                     </h2>
                     <p className="mt-2 text-xs text-slate-300 leading-relaxed">
                       {freeTest.description ||
-                        "Experience standard campus placement test conditions. Evaluate your Quantitative arithmetic, Logical reasoning, and Verbal clarity with 20 balanced questions in 15 minutes."}
+                        "Experience standard campus placement test conditions. Evaluate your Quantitative arithmetic, Logical reasoning, and Verbal clarity with 20 balanced questions in 20 minutes."}
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-200">
                       <span className="inline-flex items-center gap-1.5">
@@ -250,148 +511,308 @@ function TestsCatalogContent() {
               </div>
             )}
 
-            {/* Difficulty Level Selector Tabs */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-4">
-              <span className="text-xs font-bold text-slate-500 mr-2 inline-flex items-center gap-1.5">
-                <SlidersHorizontal size={14} /> Difficulty Level:
-              </span>
-              {difficulties.map((d) => {
-                const isSelected = selectedDifficulty === d.key;
-                const count =
-                  d.key === "ALL"
-                    ? paidTests.length
-                    : paidTests.filter(
-                        (t) => (t.difficulty || "MEDIUM").toUpperCase() === d.key
-                      ).length;
-                return (
+            {/* Folder Subparts Directory (Interactive Folder Cards) */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider inline-flex items-center gap-1.5">
+                  <Folder size={14} className="text-brand" /> Test Folders & Subparts
+                </span>
+                {selectedFolder !== "ALL" && (
                   <button
-                    key={d.key}
-                    onClick={() => setSelectedDifficulty(d.key)}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
-                      isSelected
-                        ? "bg-brand text-white shadow-xs"
+                    onClick={() => handleSelectFolder("ALL")}
+                    className="text-xs font-semibold text-brand hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>View All Folders</span>
+                    <ChevronRight size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {FOLDERS.map((f) => {
+                  const Icon = f.icon;
+                  const isSelected = selectedFolder === f.key;
+                  const count = catalogTests.filter((t) => testMatchesFolder(t, f.key)).length;
+
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => handleSelectFolder(isSelected ? "ALL" : f.key)}
+                      className={`text-left rounded-xl p-4 transition border relative flex flex-col justify-between ${
+                        isSelected
+                          ? "border-brand bg-brand/5 shadow-xs ring-2 ring-brand/20"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-2xs"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${f.iconBg}`}>
+                            <Icon size={16} />
+                          </div>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            isSelected ? "bg-brand text-white" : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {count} {count === 1 ? "Test" : "Tests"}
+                          </span>
+                        </div>
+                        <h4 className="mt-3 font-bold text-sm text-ink flex items-center gap-1">
+                          {isSelected ? <FolderOpen size={14} className="text-brand" /> : <Folder size={14} className="text-slate-400" />}
+                          {f.shortName}
+                        </h4>
+                        <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                          {f.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[11px] font-semibold">
+                        <span className={isSelected ? "text-brand" : "text-slate-400"}>
+                          {isSelected ? "Active Folder" : "Open Folder"}
+                        </span>
+                        <ChevronRight size={13} className={isSelected ? "text-brand" : "text-slate-400"} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Folder Subpart Tabs Bar & Filters */}
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
+                {/* Folder Pills */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-500 mr-1 inline-flex items-center gap-1">
+                    <Layers size={13} /> Subpart:
+                  </span>
+                  <button
+                    onClick={() => handleSelectFolder("ALL")}
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                      selectedFolder === "ALL"
+                        ? "bg-slate-900 text-white shadow-2xs"
                         : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-ink"
                     }`}
                   >
-                    <span>{d.label}</span>
-                    <span
-                      className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] ${
-                        isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {count}
+                    <span>All Folders</span>
+                    <span className={`text-[10px] rounded-full px-1.5 py-0.2 ${selectedFolder === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+                      {catalogTests.length}
                     </span>
                   </button>
-                );
-              })}
-            </div>
 
-            {/* Topic & Category Sprints */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-ink">Placement Tests & Sprints</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Targeted assessments calibrated for speed, accuracy, and company cutoff benchmarks.
-                  </p>
-                </div>
-                <span className="text-xs font-semibold text-slate-500">
-                  Showing {filteredTests.length} tests
-                </span>
-              </div>
+                  {FOLDERS.map((f) => {
+                    const isSelected = selectedFolder === f.key;
+                    const count = catalogTests.filter((t) => testMatchesFolder(t, f.key)).length;
+                    const Icon = f.icon;
 
-              {filteredTests.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-                  <p className="text-sm font-semibold text-slate-700">
-                    No tests found in the {selectedDifficulty.toLowerCase()} difficulty level yet.
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Try switching back to &ldquo;All Difficulties&rdquo; to explore other tests.
-                  </p>
-                  <button
-                    onClick={() => setSelectedDifficulty("ALL")}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
-                  >
-                    Show All Tests
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredTests.map((t) => (
-                    <div
-                      key={t.id}
-                      className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs hover:border-slate-300 hover:shadow-xs transition"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 truncate max-w-[150px]">
-                            {t.category_name || "General Aptitude"}
-                          </span>
-                          {renderDifficultyBadge(t.difficulty)}
-                        </div>
-
-                        <h3 className="mt-3 text-base font-bold text-ink leading-snug">
-                          {t.name}
-                        </h3>
-                        <p className="mt-1.5 text-xs text-slate-500 line-clamp-2">
-                          {t.description ||
-                            "Timed targeted questions designed to improve speed and eliminate recurring mistakes."}
-                        </p>
-
-                        <div className="mt-4 flex items-center gap-4 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                          <span className="inline-flex items-center gap-1">
-                            <HelpCircle size={14} className="text-slate-400" />
-                            {t.question_count} Qs
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Clock size={14} className="text-slate-400" />
-                            {Math.round(t.duration_seconds / 60)} mins
-                          </span>
-                          <span className="inline-flex items-center gap-1 font-semibold text-ink ml-auto">
-                            {t.price_inr > 0 ? `₹${t.price_inr}` : "Free"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-400">
-                          {t.negative_marking_ratio > 0
-                            ? `-${t.negative_marking_ratio} negative mark`
-                            : "No negative marks"}
+                    return (
+                      <button
+                        key={f.key}
+                        onClick={() => handleSelectFolder(f.key)}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                          isSelected
+                            ? "bg-brand text-white shadow-2xs"
+                            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-ink"
+                        }`}
+                      >
+                        <Icon size={12} className={isSelected ? "text-white" : "text-slate-400"} />
+                        <span>{f.shortName}</span>
+                        <span className={`text-[10px] rounded-full px-1.5 py-0.2 ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+                          {count}
                         </span>
-                        <button
-                          onClick={() => handleStartPaidTest(t.id)}
-                          disabled={startingTestId === t.id}
-                          className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50 shadow-2xs ${
-                            (membership?.available_test_credits ?? 0) > 0 || membership?.is_subscribed
-                              ? "bg-emerald-600 hover:bg-emerald-700"
-                              : "bg-slate-900 hover:bg-slate-800"
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Difficulty Selector Tabs */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-500 mr-1 inline-flex items-center gap-1">
+                    <SlidersHorizontal size={13} /> Difficulty:
+                  </span>
+                  {difficulties.map((d) => {
+                    const isSelected = selectedDifficulty === d.key;
+                    const count =
+                      d.key === "ALL"
+                        ? catalogTests.filter((t) => testMatchesFolder(t, selectedFolder)).length
+                        : catalogTests.filter(
+                            (t) =>
+                              testMatchesFolder(t, selectedFolder) &&
+                              (t.difficulty || "MEDIUM").toUpperCase() === d.key
+                          ).length;
+
+                    return (
+                      <button
+                        key={d.key}
+                        onClick={() => setSelectedDifficulty(d.key)}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                          isSelected
+                            ? "bg-slate-800 text-white"
+                            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-ink"
+                        }`}
+                      >
+                        <span>{d.label}</span>
+                        <span
+                          className={`ml-0.5 rounded-full px-1.5 py-0.2 text-[10px] ${
+                            isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          {startingTestId === t.id ? (
-                            <>
-                              <Loader2 size={13} className="animate-spin" />
-                              <span>Starting...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>
-                                {membership?.is_subscribed
-                                  ? "Start Test (Pro)"
-                                  : (membership?.available_test_credits ?? 0) > 0
-                                  ? "Use Pass & Start"
-                                  : "Start Test"}
-                              </span>
-                              <ArrowRight size={13} />
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Company Sub-Filter Bar (when in company folder) */}
+              {selectedFolder === "company" && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs">
+                  <span className="font-bold text-amber-900 mr-1 inline-flex items-center gap-1">
+                    <Building2 size={13} /> Target Company:
+                  </span>
+                  {["ALL", "TCS", "Infosys", "Wipro", "Tech Mahindra"].map((comp) => {
+                    const isSelected = companySubFilter === comp;
+                    return (
+                      <button
+                        key={comp}
+                        onClick={() => setCompanySubFilter(comp)}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                          isSelected
+                            ? "bg-amber-600 text-white shadow-2xs"
+                            : "bg-white text-amber-900 border border-amber-200 hover:bg-amber-100"
+                        }`}
+                      >
+                        {comp === "ALL" ? "All Companies" : comp}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {/* FOCUSED FOLDER VIEW: When a specific folder is selected */}
+            {selectedFolder !== "ALL" && activeFolderDef && (
+              <div className="space-y-4">
+                {/* Active Folder Header Banner */}
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-3.5">
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${activeFolderDef.iconBg}`}>
+                      {(() => {
+                        const Icon = activeFolderDef.icon;
+                        return <Icon size={24} />;
+                      })()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400">📁 Folders</span>
+                        <span className="text-slate-300">/</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md border ${activeFolderDef.badgeColor}`}>
+                          {activeFolderDef.name}
+                        </span>
+                      </div>
+                      <h2 className="text-xl font-bold text-ink mt-1 flex items-center gap-2">
+                        {activeFolderDef.name} Tests
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          {displayedTests.length} {displayedTests.length === 1 ? "test" : "tests"}
+                        </span>
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                        {activeFolderDef.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleSelectFolder("ALL")}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-ink transition self-start sm:self-center"
+                  >
+                    <span>← All Folders</span>
+                  </button>
+                </div>
+
+                {/* Test Cards Grid for this folder */}
+                {displayedTests.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                    <p className="text-sm font-semibold text-slate-700">
+                      No tests found matching the selected filters in this folder.
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Try resetting the difficulty or company filter to explore available tests.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSelectedDifficulty("ALL");
+                        setCompanySubFilter("ALL");
+                      }}
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    {displayedTests.map((t) => renderTestCard(t))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ALL FOLDERS OVERVIEW: Sectioned by Folder */}
+            {selectedFolder === "ALL" && (
+              <div className="space-y-10">
+                {FOLDERS.map((f) => {
+                  const Icon = f.icon;
+                  const folderTests = catalogTests.filter((t) => {
+                    if (!testMatchesFolder(t, f.key)) return false;
+                    if (selectedDifficulty !== "ALL") {
+                      const diff = (t.difficulty || "MEDIUM").toUpperCase();
+                      if (diff !== selectedDifficulty) return false;
+                    }
+                    return true;
+                  });
+
+                  if (folderTests.length === 0 && selectedDifficulty !== "ALL") {
+                    return null;
+                  }
+
+                  return (
+                    <section key={f.key} className="space-y-4">
+                      {/* Section Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${f.iconBg}`}>
+                            <Icon size={16} />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-ink flex items-center gap-2">
+                              {f.name}
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                {folderTests.length}
+                              </span>
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {f.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleSelectFolder(f.key)}
+                          className="text-xs font-semibold text-brand hover:underline inline-flex items-center gap-1 self-start sm:self-center shrink-0"
+                        >
+                          <span>Open {f.shortName} Folder</span>
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+
+                      {/* Cards Grid for this folder section */}
+                      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                        {folderTests.map((t) => renderTestCard(t))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -403,8 +824,8 @@ export default function TestsCatalogPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
-          <div className="h-8 w-48 bg-slate-200 rounded animate-pulse" />
+        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+          <Loader2 size={32} className="animate-spin text-brand" />
         </div>
       }
     >

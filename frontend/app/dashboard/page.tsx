@@ -20,6 +20,7 @@ import {
   ChevronRight,
   LogOut,
   Ticket,
+  Crown,
 } from "lucide-react";
 import { getStudentDashboard, studentLogout } from "@/lib/api";
 import { StudentDashboardData } from "@/types/commerce";
@@ -168,7 +169,15 @@ function DashboardContent() {
 
           {/* Membership Badge */}
           <div className="flex items-center gap-3">
-            {data.is_subscribed ? (
+            {data.role === "ADMIN" ? (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs shadow-xs">
+                <Crown size={18} className="text-amber-600 shrink-0" />
+                <div>
+                  <span className="font-bold text-amber-900 block">👑 Administrator</span>
+                  <span className="text-[11px] text-amber-700">All Tests Free & Unlocked</span>
+                </div>
+              </div>
+            ) : data.is_subscribed ? (
               <div className="flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50/70 px-4 py-2 text-xs">
                 <Sparkles size={16} className="text-purple-600 shrink-0" />
                 <div>

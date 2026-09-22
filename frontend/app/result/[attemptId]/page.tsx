@@ -63,6 +63,15 @@ function ResultPageContent() {
     return `${mins}m ${secs}s`;
   };
 
+  const getFullImageUrl = (url?: string | null) => {
+    if (!url) return null;
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+      return url;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") || "http://127.0.0.1:8000";
+    return `${apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
   if (error) {
     return (
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
@@ -573,11 +582,29 @@ function ResultPageContent() {
                     {ans.question_text}
                   </p>
 
+                  {/* Question Diagram / Image */}
+                  {ans.image_url && (
+                    <div className="mt-3.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 max-w-xl">
+                      <div className="text-[10px] font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
+                        Question Figure:
+                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getFullImageUrl(ans.image_url) || ""}
+                        alt={`Diagram for question ${ans.position}`}
+                        className="max-h-72 w-auto rounded-lg border border-slate-200 bg-white object-contain p-1 shadow-2xs hover:scale-101 transition duration-200 cursor-zoom-in"
+                        onClick={() => window.open(getFullImageUrl(ans.image_url) || "", "_blank")}
+                        title="Click to view full size"
+                      />
+                    </div>
+                  )}
+
                   {/* Options */}
                   <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     {Object.entries(ans.options).map(([key, text]) => {
                       const isSelected = ans.selected_answer === key;
                       const isTheCorrectOption = ans.correct_answer === key;
+                      const optImg = ans.option_images ? getFullImageUrl(ans.option_images[key]) : null;
 
                       let style = "border-slate-200 bg-white text-slate-700";
                       if (isTheCorrectOption) {
@@ -602,7 +629,17 @@ function ResultPageContent() {
                           >
                             {key}
                           </span>
-                          <span className="flex-1 leading-normal">{text}</span>
+                          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2">
+                            {text && <span className="leading-normal">{text}</span>}
+                            {optImg && (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={optImg}
+                                alt={`Option ${key} figure`}
+                                className="max-h-20 max-w-xs rounded border border-slate-200 bg-white object-contain p-1 shadow-2xs"
+                              />
+                            )}
+                          </div>
                           {isTheCorrectOption && (
                             <span className="text-[10px] font-bold text-emerald-700 shrink-0">
                               Correct Answer
@@ -624,6 +661,16 @@ function ResultPageContent() {
                     <p className="mt-1 text-slate-700 leading-relaxed whitespace-pre-line">
                       {ans.explanation}
                     </p>
+                    {ans.explanation_image_url && (
+                      <div className="mt-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getFullImageUrl(ans.explanation_image_url) || ""}
+                          alt="Explanation diagram"
+                          className="max-h-64 rounded-lg border border-slate-200 bg-white object-contain p-1 shadow-2xs"
+                        />
+                      </div>
+                    )}
                   </div>
                 </article>
               );

@@ -13,14 +13,18 @@ import {
   AlertCircle,
   ShieldCheck,
   RotateCcw,
+  Crown,
 } from "lucide-react";
-import { getFreeTestInfo, startFreeTest } from "@/lib/api";
+import { getFreeTestInfo, startFreeTest, getUserMembership } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { FreeTestInfoResponse } from "@/types/test";
+import { MembershipStatus } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
 
 export default function FreeTestPage() {
   const router = useRouter();
   const [info, setInfo] = useState<FreeTestInfoResponse | null>(null);
+  const [membership, setMembership] = useState<MembershipStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +36,12 @@ export default function FreeTestPage() {
         setError(err instanceof Error ? err.message : "Unable to load free test details. Please try again.");
       })
       .finally(() => setIsLoading(false));
+
+    if (getToken()) {
+      getUserMembership()
+        .then(setMembership)
+        .catch(() => {});
+    }
   }, []);
 
   const handleStart = async () => {
@@ -128,6 +138,16 @@ export default function FreeTestPage() {
                   >
                     View Your Result
                   </Link>
+                )}
+                {membership?.role === "ADMIN" && (
+                  <button
+                    onClick={handleStart}
+                    disabled={isStarting}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-amber-700 transition shadow-xs"
+                  >
+                    <Crown size={14} />
+                    <span>{isStarting ? "Starting..." : "Admin: Start Fresh Attempt"}</span>
+                  </button>
                 )}
                 <Link
                   href="/tests"

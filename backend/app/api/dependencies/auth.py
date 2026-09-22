@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -19,8 +20,9 @@ def get_current_user(
     if not credentials:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     try:
-        user_id = decode_access_token(credentials.credentials)
-    except ValueError as error:
+        user_id_raw = decode_access_token(credentials.credentials)
+        user_id = UUID(str(user_id_raw)) if not isinstance(user_id_raw, UUID) else user_id_raw
+    except (ValueError, Exception) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)) from error
     user = db.get(User, user_id)
     if not user or not user.is_active:

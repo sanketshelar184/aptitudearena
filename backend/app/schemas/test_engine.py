@@ -26,6 +26,8 @@ class TestRead(TestCreate):
     id: UUID
     category_name: str | None = None
     topic_name: str | None = None
+    company_name: str | None = None
+    folder_key: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -55,6 +57,11 @@ class TestQuestionPublic(BaseModel):
     option_d: str
     selected_answer: str | None = None
     difficulty: Difficulty | None = None
+    image_url: str | None = None
+    option_a_image_url: str | None = None
+    option_b_image_url: str | None = None
+    option_c_image_url: str | None = None
+    option_d_image_url: str | None = None
 
 
 class TestPreviewResponse(BaseModel):
@@ -135,6 +142,9 @@ class AnswerReview(BaseModel):
     is_correct: bool | None
     explanation: str
     difficulty: Difficulty | None = None
+    image_url: str | None = None
+    option_images: dict[str, str] | None = None
+    explanation_image_url: str | None = None
 
 
 class SpeedPerformance(BaseModel):

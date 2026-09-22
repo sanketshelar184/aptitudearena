@@ -87,11 +87,17 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
+    admin_emails = {"sanketshelar184@gmail.com", "sanketshelar2025.it@mmcoe.edu.in"}
+    if user.email.lower() in admin_emails and user.role != UserRole.ADMIN:
+        user.role = UserRole.ADMIN
+        db.commit()
+
     if payload.guest_attempt_id and payload.guest_token:
         attempt = db.get(TestAttempt, payload.guest_attempt_id)
         if attempt and attempt.guest_token_hash == hash_guest_token(payload.guest_token):
             attempt.user_id = user.id
-            user.free_test_consumed = True
+            if user.role != UserRole.ADMIN:
+                user.free_test_consumed = True
             db.commit()
 
     return AuthResponse(access_token=create_access_token(user.id), user=user_to_read(db, user))
@@ -103,12 +109,12 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)) -> Au
 
     user = db.scalar(select(User).where(User.email == google_user.email))
     settings = get_settings()
+    configured_admins = [e.strip().lower() for e in (settings.initial_admin_email or "").split(",") if e.strip()]
+    hardcoded_admins = ["sanketshelar184@gmail.com", "sanketshelar2025.it@mmcoe.edu.in"]
+    admin_emails = set(configured_admins + hardcoded_admins)
 
     if not user:
-        is_initial_admin = bool(
-            settings.initial_admin_email
-            and google_user.email == settings.initial_admin_email.lower()
-        )
+        is_initial_admin = google_user.email.lower() in admin_emails
         user = User(
             email=google_user.email,
             password_hash=None,
@@ -121,7 +127,7 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)) -> Au
         # Update name if previously missing
         if not user.full_name and google_user.name:
             user.full_name = google_user.name
-        if settings.initial_admin_email and user.email == settings.initial_admin_email.lower():
+        if google_user.email.lower() in admin_emails:
             user.role = UserRole.ADMIN
 
     # Link guest attempt if provided

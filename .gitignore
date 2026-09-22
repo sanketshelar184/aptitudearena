@@ -12,6 +12,7 @@ frontend/.env.*
 # Local data & databases
 postgres-data/
 *.db
+!backend/aptitude.db
 *.sqlite
 *.sqlite3
 

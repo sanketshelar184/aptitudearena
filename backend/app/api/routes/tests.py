@@ -48,7 +48,8 @@ def get_optional_user(
     if not credentials:
         return None
     try:
-        user_id = decode_access_token(credentials.credentials)
+        user_id_raw = decode_access_token(credentials.credentials)
+        user_id = UUID(str(user_id_raw)) if not isinstance(user_id_raw, UUID) else user_id_raw
         user = db.get(User, user_id)
         return user if (user and user.is_active) else None
     except Exception:
@@ -66,12 +67,56 @@ def get_or_create_guest_token(
     return secrets.token_urlsafe(32), True
 
 
+def make_public_question(q: Question, position: int, selected_answer: str | None = None) -> TestQuestionPublic:
+    return TestQuestionPublic(
+        id=q.id,
+        position=position,
+        question_text=q.question_text,
+        option_a=q.option_a,
+        option_b=q.option_b,
+        option_c=q.option_c,
+        option_d=q.option_d,
+        selected_answer=selected_answer,
+        difficulty=q.difficulty,
+        image_url=q.image_url,
+        option_a_image_url=q.option_a_image_url,
+        option_b_image_url=q.option_b_image_url,
+        option_c_image_url=q.option_c_image_url,
+        option_d_image_url=q.option_d_image_url,
+    )
+
+
 def enrich_test(db: Session, test: Test) -> TestRead:
     cat = db.get(Category, test.category_id) if test.category_id else None
     top = db.get(Topic, test.topic_id) if test.topic_id else None
     data = TestRead.model_validate(test)
     data.category_name = cat.name if cat else "Mixed / Comprehensive"
     data.topic_name = top.name if top else "Mixed Topics"
+
+    # Detect Company Name
+    tname_lower = test.name.lower()
+    if "tcs" in tname_lower:
+        data.company_name = "TCS"
+    elif "infosys" in tname_lower:
+        data.company_name = "Infosys"
+    elif "wipro" in tname_lower:
+        data.company_name = "Wipro"
+    elif "tech mahindra" in tname_lower or "mahindra" in tname_lower:
+        data.company_name = "Tech Mahindra"
+
+    # Determine Folder Key
+    cat_lower = (cat.name.lower() if cat else "")
+    if "quantitative" in cat_lower or "numerical" in tname_lower or ("speed test" in tname_lower and "quantitative" in tname_lower):
+        data.folder_key = "aptitude"
+    elif "logical" in cat_lower or ("reasoning" in tname_lower and not ("infosys" in tname_lower)):
+        data.folder_key = "logical"
+    elif "verbal" in cat_lower or "english" in cat_lower or "grammar" in tname_lower or "reading comprehension" in tname_lower:
+        data.folder_key = "verbal"
+    elif "technical" in cat_lower or "cs/it" in cat_lower or "c/c++" in tname_lower or ("coding" in tname_lower and not ("tcs advanced" in tname_lower)):
+        data.folder_key = "technical"
+    else:
+        data.folder_key = "company" if data.company_name else "aptitude"
+
     return data
 
 
@@ -148,7 +193,7 @@ def get_free_test_info(
         else:
             has_completed = True
 
-    if user and user.free_test_consumed:
+    if user and user.free_test_consumed and user.role != UserRole.ADMIN:
         has_completed = True
 
     return FreeTestInfoResponse(
@@ -193,7 +238,7 @@ def start_or_resume_free_test(
     # Check for existing active attempt to resume
     query = select(TestAttempt).where(TestAttempt.test_id == free_test.id)
     if user:
-        if user.free_test_consumed:
+        if user.free_test_consumed and user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=403,
                 detail="You have already completed your free placement test. Explore our full test bank to continue.",
@@ -228,20 +273,7 @@ def start_or_resume_free_test(
                 expires_at=latest_attempt.expires_at,
                 duration_seconds=free_test.duration_seconds,
                 total_questions=latest_attempt.total_questions,
-                questions=[
-                    TestQuestionPublic(
-                        id=q.id,
-                        position=ans.position,
-                        question_text=q.question_text,
-                        option_a=q.option_a,
-                        option_b=q.option_b,
-                        option_c=q.option_c,
-                        option_d=q.option_d,
-                        selected_answer=ans.selected_answer,
-                        difficulty=q.difficulty,
-                    )
-                    for ans, q in ordered_items
-                ],
+                questions=[make_public_question(q, ans.position, ans.selected_answer) for ans, q in ordered_items],
             )
         else:
             score_attempt(db, latest_attempt)
@@ -266,19 +298,7 @@ def start_or_resume_free_test(
         expires_at=attempt.expires_at,
         duration_seconds=free_test.duration_seconds,
         total_questions=attempt.total_questions,
-        questions=[
-            TestQuestionPublic(
-                id=q.id,
-                position=idx,
-                question_text=q.question_text,
-                option_a=q.option_a,
-                option_b=q.option_b,
-                option_c=q.option_c,
-                option_d=q.option_d,
-                difficulty=q.difficulty,
-            )
-            for idx, q in enumerate(questions, start=1)
-        ],
+        questions=[make_public_question(q, idx) for idx, q in enumerate(questions, start=1)],
     )
 
 
@@ -354,20 +374,7 @@ def start_test(
             expires_at=active_attempt.expires_at,
             duration_seconds=test.duration_seconds,
             total_questions=active_attempt.total_questions,
-            questions=[
-                TestQuestionPublic(
-                    id=q.id,
-                    position=ans.position,
-                    question_text=q.question_text,
-                    option_a=q.option_a,
-                    option_b=q.option_b,
-                    option_c=q.option_c,
-                    option_d=q.option_d,
-                    selected_answer=ans.selected_answer,
-                    difficulty=q.difficulty,
-                )
-                for ans, q in ordered_items
-            ],
+            questions=[make_public_question(q, ans.position, ans.selected_answer) for ans, q in ordered_items],
         )
 
     if not test.is_free:
@@ -376,13 +383,15 @@ def start_test(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Please log in to take premium placement tests.",
             )
-        has_access, _ = check_user_test_access(db, user, test)
-        if not has_access:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="Payment required. Please purchase a test pass or subscribe to Pro.",
-            )
-        consume_user_test_access(db, user, test)
+        # Admin All-Access: admins can take any test for free
+        if user.role != UserRole.ADMIN:
+            has_access, _ = check_user_test_access(db, user, test)
+            if not has_access:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail="Payment required. Please purchase a test pass or subscribe to Pro.",
+                )
+            consume_user_test_access(db, user, test)
 
     attempt, token, questions = start_guest_attempt(
         db,
@@ -399,19 +408,7 @@ def start_test(
         expires_at=attempt.expires_at,
         duration_seconds=test.duration_seconds,
         total_questions=attempt.total_questions,
-        questions=[
-            TestQuestionPublic(
-                id=q.id,
-                position=idx,
-                question_text=q.question_text,
-                option_a=q.option_a,
-                option_b=q.option_b,
-                option_c=q.option_c,
-                option_d=q.option_d,
-                difficulty=q.difficulty,
-            )
-            for idx, q in enumerate(questions, start=1)
-        ],
+        questions=[make_public_question(q, idx) for idx, q in enumerate(questions, start=1)],
     )
 
 
@@ -450,11 +447,11 @@ def submit_attempt(
 
     attempt = score_attempt(db, attempt)
 
-    # Mark user free test consumed if applicable
+    # Mark user free test consumed if applicable (skip for admin)
     if attempt.user_id:
         user = db.get(User, attempt.user_id)
         test = db.get(Test, attempt.test_id)
-        if user and test and test.is_free:
+        if user and test and test.is_free and user.role != UserRole.ADMIN:
             user.free_test_consumed = True
             db.commit()
 
@@ -472,7 +469,7 @@ def get_attempt_result(
     if not attempt:
         raise HTTPException(status_code=404, detail="Attempt not found")
 
-    if user and attempt.user_id == user.id:
+    if user and (user.role == UserRole.ADMIN or attempt.user_id == user.id):
         return review_attempt(db, attempt)
 
     if guest_token and attempt.guest_token_hash and secrets.compare_digest(attempt.guest_token_hash, hash_guest_token(guest_token)):
@@ -520,18 +517,5 @@ def get_attempt_for_taking(
         expires_at=attempt.expires_at,
         duration_seconds=test.duration_seconds if test else 900,
         total_questions=attempt.total_questions,
-        questions=[
-            TestQuestionPublic(
-                id=q.id,
-                position=ans.position,
-                question_text=q.question_text,
-                option_a=q.option_a,
-                option_b=q.option_b,
-                option_c=q.option_c,
-                option_d=q.option_d,
-                selected_answer=ans.selected_answer,
-                difficulty=q.difficulty,
-            )
-            for ans, q in ordered_items
-        ],
+        questions=[make_public_question(q, ans.position, ans.selected_answer) for ans, q in ordered_items],
     )

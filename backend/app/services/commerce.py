@@ -16,8 +16,7 @@ from app.core.config import get_settings
 from app.models.attempt import TestAttempt
 from app.models.attempt import TestAnswer, TestAttempt
 from app.models.commerce import Entitlement, Payment, Product, Subscription
-from app.models.enums import PaymentStatus, ProductType, SubscriptionStatus
-from app.models.enums import AttemptStatus, PaymentStatus, ProductType, SubscriptionStatus
+from app.models.enums import AttemptStatus, PaymentStatus, ProductType, SubscriptionStatus, UserRole
 from app.models.test import Test
 from app.models.user import User
 from app.schemas.commerce import (
@@ -308,6 +307,10 @@ def check_user_test_access(db: Session, user: User, test: Test) -> tuple[bool, s
     if test.is_free:
         return True, "FREE_TEST"
 
+    # Admin All-Access: All tests are completely free for administrators
+    if user.role == UserRole.ADMIN:
+        return True, "ADMIN_ACCESS"
+
     now = utc_now()
 
     # 1. Check if user has an active Pro Subscription
@@ -342,6 +345,10 @@ def consume_user_test_access(db: Session, user: User, test: Test) -> None:
     if test.is_free:
         return
 
+    # Never deduct passes or credits from administrators
+    if user.role == UserRole.ADMIN:
+        return
+
     now = utc_now()
     active_sub = db.scalar(
         select(Subscription).where(
@@ -372,6 +379,21 @@ def consume_user_test_access(db: Session, user: User, test: Test) -> None:
 
 
 def get_membership_status(db: Session, user: User) -> MembershipStatusResponse:
+    # Admin All-Access override: report active unlimited access
+    if user.role == UserRole.ADMIN:
+        return MembershipStatusResponse(
+            user_id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            role=user.role.value,
+            is_subscribed=True,
+            subscription_status=SubscriptionStatus.ACTIVE,
+            subscription_plan="Admin All-Access (All Tests Free)",
+            subscription_end_date=None,
+            available_test_credits=9999,
+            free_test_consumed=False,
+        )
+
     now = utc_now()
     active_sub = db.scalar(
         select(Subscription).where(

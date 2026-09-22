@@ -34,5 +34,12 @@ class Question(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True, nullable=False)
     source: Mapped[str | None] = mapped_column(String(255))
 
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    option_a_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    option_b_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    option_c_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    option_d_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    explanation_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     category: Mapped[Category] = relationship(back_populates="questions")
     topic: Mapped[Topic] = relationship(back_populates="questions")

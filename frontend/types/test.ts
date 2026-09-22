@@ -12,6 +12,8 @@ export interface Test {
   topic_id: string | null;
   category_name?: string | null;
   topic_name?: string | null;
+  company_name?: string | null;
+  folder_key?: string | null;
   difficulty: Difficulty | null;
   is_free: boolean;
   is_premium: boolean;
@@ -32,6 +34,11 @@ export interface PublicQuestion {
   option_d: string;
   selected_answer?: string | null;
   difficulty?: Difficulty | null;
+  image_url?: string | null;
+  option_a_image_url?: string | null;
+  option_b_image_url?: string | null;
+  option_c_image_url?: string | null;
+  option_d_image_url?: string | null;
 }
 
 export interface StartAttemptResponse {
@@ -77,6 +84,9 @@ export interface AnswerReview {
   is_correct: boolean | null;
   explanation: string;
   difficulty?: Difficulty | null;
+  image_url?: string | null;
+  option_images?: Record<string, string> | null;
+  explanation_image_url?: string | null;
 }
 
 export interface SpeedPerformance {

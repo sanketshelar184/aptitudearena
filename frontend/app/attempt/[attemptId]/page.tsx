@@ -38,6 +38,8 @@ function ExamAttemptContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const allowExitRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Time tracking per question
@@ -85,23 +87,45 @@ function ExamAttemptContent() {
     };
   }, [flushPendingSync]);
 
-  // Accidental exit protection: Warn student if they attempt to close tab or leave during active exam
+  // Accidental exit protection: Warn student if they press browser Back button, reload, or close tab
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Push initial history state trap so pressing Back button emits popstate on this page instead of leaving
+    window.history.pushState({ inTest: true }, "", window.location.href);
+
+    const handlePopState = () => {
+      if (allowExitRef.current) return;
+      // Re-push state to trap the URL in place and prompt the user
+      window.history.pushState({ inTest: true }, "", window.location.href);
+      setShowExitModal(true);
+    };
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isSubmitting) {
+      if (!isSubmitting && !allowExitRef.current) {
         e.preventDefault();
         e.returnValue = "";
         return "";
       }
     };
 
+    window.addEventListener("popstate", handlePopState);
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
+      window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [isSubmitting]);
+
+  const handleConfirmExit = () => {
+    allowExitRef.current = true;
+    setShowExitModal(false);
+    router.push("/tests");
+  };
+
+  const handleCancelExit = () => {
+    setShowExitModal(false);
+  };
 
   // Retrieve token
   useEffect(() => {
@@ -128,6 +152,7 @@ function ExamAttemptContent() {
         return;
       }
 
+      allowExitRef.current = true;
       setIsSubmitting(true);
       try {
         await flushPendingSync();
@@ -348,12 +373,20 @@ function ExamAttemptContent() {
   const markedCount = Object.values(markedForReview).filter(Boolean).length;
   const unansweredCount = questions.length - answeredCount;
   const isTimeCritical = (secondsRemaining ?? 999) < 120; // under 2 minutes
+  const getFullImageUrl = (url?: string | null) => {
+    if (!url) return null;
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+      return url;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") || "http://127.0.0.1:8000";
+    return `${apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
 
-  const options: Array<{ key: string; text: string }> = [
-    { key: "A", text: currentQuestion.option_a },
-    { key: "B", text: currentQuestion.option_b },
-    { key: "C", text: currentQuestion.option_c },
-    { key: "D", text: currentQuestion.option_d },
+  const options: Array<{ key: string; text: string; imageUrl?: string | null }> = [
+    { key: "A", text: currentQuestion.option_a, imageUrl: currentQuestion.option_a_image_url },
+    { key: "B", text: currentQuestion.option_b, imageUrl: currentQuestion.option_b_image_url },
+    { key: "C", text: currentQuestion.option_c, imageUrl: currentQuestion.option_c_image_url },
+    { key: "D", text: currentQuestion.option_d, imageUrl: currentQuestion.option_d_image_url },
   ];
 
   return (
@@ -362,9 +395,17 @@ function ExamAttemptContent() {
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-xs">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           {/* Test Name & Counter */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setShowExitModal(true)}
+              className="rounded-lg p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              title="Leave test"
+            >
+              <ChevronLeft size={20} />
+            </button>
             <div>
-              <h1 className="text-sm font-bold text-ink truncate max-w-[200px] sm:max-w-md">
+              <h1 className="text-sm font-bold text-ink truncate max-w-[180px] sm:max-w-md">
                 {attemptData.test_name}
               </h1>
               <p className="text-[11px] text-slate-500 font-medium">
@@ -496,10 +537,28 @@ function ExamAttemptContent() {
               {currentQuestion.question_text}
             </div>
 
+            {/* Question Diagram / Figure (if available) */}
+            {currentQuestion.image_url && (
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 max-w-2xl">
+                <div className="text-[11px] font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+                  Figure / Diagram:
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getFullImageUrl(currentQuestion.image_url) || ""}
+                  alt={`Diagram for question ${currentIndex + 1}`}
+                  className="max-h-80 w-auto rounded-lg border border-slate-200 bg-white object-contain shadow-2xs hover:scale-101 transition duration-200 cursor-zoom-in"
+                  onClick={() => window.open(getFullImageUrl(currentQuestion.image_url) || "", "_blank")}
+                  title="Click to open diagram in full size"
+                />
+              </div>
+            )}
+
             {/* Options List */}
             <div className="mt-8 space-y-3">
               {options.map((opt) => {
                 const isSelected = answers[currentQuestion.id] === opt.key;
+                const optImg = getFullImageUrl(opt.imageUrl);
                 return (
                   <button
                     key={opt.key}
@@ -519,7 +578,17 @@ function ExamAttemptContent() {
                     >
                       {opt.key}
                     </div>
-                    <span className="text-sm font-medium leading-normal">{opt.text}</span>
+                    <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2.5">
+                      {opt.text && <span className="text-sm font-medium leading-normal">{opt.text}</span>}
+                      {optImg && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={optImg}
+                          alt={`Option ${opt.key} figure`}
+                          className="max-h-24 max-w-xs rounded border border-slate-200 bg-white object-contain p-1 shadow-2xs"
+                        />
+                      )}
+                    </div>
                   </button>
                 );
               })}
@@ -688,6 +757,43 @@ function ExamAttemptContent() {
                     <span>Confirm & Grade</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Accidental Exit / Browser Back Button Confirmation Modal */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <AlertTriangle size={22} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-ink">Leave Test in Progress?</h3>
+                <p className="text-xs text-slate-500">Your timer is actively running.</p>
+              </div>
+            </div>
+
+            <p className="mt-4 rounded-xl bg-slate-50 p-3.5 text-xs text-slate-600 leading-relaxed border border-slate-100">
+              Are you sure you want to leave this test? If you leave, your answers so far are saved, but the timer will continue running in the background until the test duration finishes.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancelExit}
+                className="rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition"
+              >
+                Stay &amp; Continue Test
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmExit}
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 transition"
+              >
+                Yes, Leave Test
               </button>
             </div>
           </div>

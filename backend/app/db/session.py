@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -25,11 +26,12 @@ def create_db_engine():
                 pass
             return test_eng
         except Exception as e:
+            sqlite_path = Path(__file__).resolve().parents[2] / "aptitude.db"
             logger.warning(
                 f"PostgreSQL at {db_url} is unreachable ({type(e).__name__}). "
-                "Seamlessly falling back to local SQLite database (sqlite:///./aptitude.db)."
+                f"Seamlessly falling back to local SQLite database (sqlite:///{sqlite_path.as_posix()})."
             )
-            db_url = "sqlite:///./aptitude.db"
+            db_url = f"sqlite:///{sqlite_path.as_posix()}"
 
     connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
     eng = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
