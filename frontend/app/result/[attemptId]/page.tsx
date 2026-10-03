@@ -503,6 +503,41 @@ function ResultPageContent() {
           )}
         </div>
 
+        {/* Telegram Questions & Placement Discussions Banner */}
+        <div className="mt-8 rounded-2xl bg-gradient-to-r from-[#2AABEE]/10 via-[#229ED9]/10 to-sky-100/40 border border-[#229ED9]/30 p-5 sm:p-6 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#2AABEE] to-[#0088cc] text-white shadow-xs">
+                <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.942z"/>
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-ink">
+                    Stuck on a tricky question or want shortcut formulas?
+                  </h3>
+                  <span className="rounded-full bg-[#229ED9]/20 px-2 py-0.5 text-[10px] font-bold text-[#0088cc] uppercase">
+                    Discussion
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-600">
+                  Discuss solutions with mentors and peers, share shortcuts, and get placement drive updates on our Telegram channel.
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://t.me/+u4yA-5lKgFhmMTk1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2AABEE] to-[#0088cc] hover:from-[#229ED9] hover:to-[#0077b5] px-4 py-2.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all"
+            >
+              <span>Discuss on Telegram</span>
+              <ArrowRight size={13} />
+            </a>
+          </div>
+        </div>
+
         {/* Detailed Answer Review */}
         <div className="mt-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">

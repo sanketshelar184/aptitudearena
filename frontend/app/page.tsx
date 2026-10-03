@@ -408,6 +408,17 @@ export default function LandingPage() {
           <div className="flex items-center gap-5 font-medium">
             <Link href="/tests" className="hover:text-ink">Browse Tests</Link>
             <Link href="/pricing" className="hover:text-ink">Pricing</Link>
+            <a
+              href="https://t.me/+u4yA-5lKgFhmMTk1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#0088cc] font-semibold text-[#0088cc] flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.942z"/>
+              </svg>
+              <span>Telegram Community</span>
+            </a>
             <Link href="/admin/login" className="hover:text-ink">Admin Portal</Link>
           </div>
         </div>

@@ -377,6 +377,39 @@ function DashboardContent() {
           )}
         </div>
 
+        {/* Telegram Placement Community Banner */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#179cde] via-[#229ed9] to-[#0088cc] p-5 sm:p-6 text-white shadow-sm">
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-xs text-white shadow-inner">
+                <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.942z"/>
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-extrabold tracking-tight">Official Placement Prep Channel</h3>
+                  <span className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-sky-100 max-w-xl leading-relaxed">
+                  Join fellow students for daily quantitative &amp; reasoning problem discussions, off-campus drive updates, and solved PDF papers for TCS, Infosys, and Wipro.
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://t.me/+u4yA-5lKgFhmMTk1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-[#0088cc] shadow-md hover:bg-sky-50 active:scale-95 transition-all"
+            >
+              <span>Join on Telegram</span>
+              <ArrowRight size={13} />
+            </a>
+          </div>
+        </div>
+
         {/* Test Attempt History Table */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">

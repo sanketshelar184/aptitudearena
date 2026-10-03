@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import TelegramCommunityButton from "@/components/TelegramCommunityButton";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aptitudearena.com";
 
@@ -52,6 +53,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased text-slate-900 bg-slate-50 min-h-screen">
         {children}
+        <TelegramCommunityButton />
       </body>
     </html>
   );
