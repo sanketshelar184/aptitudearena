@@ -20,8 +20,8 @@ def create_db_engine():
 
     if "postgresql" in db_url:
         try:
-            # Check if PostgreSQL is reachable within 2 seconds
-            test_eng = create_engine(db_url, connect_args={"connect_timeout": 2}, pool_pre_ping=True)
+            # Check if PostgreSQL is reachable within 10 seconds (allows cloud DB cold starts like Neon)
+            test_eng = create_engine(db_url, connect_args={"connect_timeout": 10}, pool_pre_ping=True)
             with test_eng.connect():
                 pass
             return test_eng
