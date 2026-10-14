@@ -29,6 +29,8 @@ import { getToken } from "@/lib/auth";
 import { Test } from "@/types/test";
 import { MembershipStatus } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
+import TopicTestGenerator from "@/components/TopicTestGenerator";
+
 
 interface FolderDefinition {
   key: string;
@@ -435,15 +437,15 @@ function TestsCatalogContent() {
         )}
 
         {/* Page Hero */}
-        <div className="max-w-2xl">
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-brand border border-blue-200 uppercase tracking-wider">
-            <Zap size={13} /> Placement Practice Bank
+        <div className="max-w-3xl">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-brand border border-blue-200 uppercase tracking-wider">
+            <Zap size={13} /> Adaptive Placement Practice Arena
           </span>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Aptitude Tests & Sprints
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-ink sm:text-4xl">
+            Aptitude Tests & Topic Sprints
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Engineered to simulate real TCS, Infosys, Wipro, Cognizant, and product-company placement exams. Choose a folder below to explore tests by domain or company.
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+            Practice by specific topics on-demand or attempt calibrated company mocks for TCS, Infosys, Wipro, and Cognizant. Every test automatically draws fresh, unseen questions from our problem bank with Zero-Repeat intelligence.
           </p>
         </div>
 
@@ -511,28 +513,39 @@ function TestsCatalogContent() {
               </div>
             )}
 
-            {/* Folder Subparts Directory (Interactive Folder Cards) */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider inline-flex items-center gap-1.5">
-                  <Folder size={14} className="text-brand" /> Test Folders & Subparts
-                </span>
+            {/* Topic Test Generator Component */}
+            <TopicTestGenerator membership={membership} />
+
+            {/* Curated Direct Mocks & Sectional Tests Header */}
+            <div className="pt-6 border-t border-slate-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-xl font-black text-ink tracking-tight flex items-center gap-2">
+                    <span>Curated Placement Mocks & Full Papers</span>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                      Direct 1-Click Start
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Full-length exam simulations calibrated to TCS NQT, Infosys, Wipro, and sectional domain cut-offs.
+                  </p>
+                </div>
                 {selectedFolder !== "ALL" && (
                   <button
                     onClick={() => handleSelectFolder("ALL")}
-                    className="text-xs font-semibold text-brand hover:underline inline-flex items-center gap-1"
+                    className="text-xs font-bold text-brand hover:underline inline-flex items-center gap-1 self-start sm:self-center"
                   >
-                    <span>View All Folders</span>
+                    <span>View All Domains</span>
                     <ChevronRight size={13} />
                   </button>
                 )}
               </div>
 
+              {/* Folder Subparts Directory (Interactive Folder Cards) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 {FOLDERS.map((f) => {
                   const Icon = f.icon;
                   const isSelected = selectedFolder === f.key;
-                  const count = catalogTests.filter((t) => testMatchesFolder(t, f.key)).length;
 
                   return (
                     <button
@@ -549,14 +562,20 @@ function TestsCatalogContent() {
                           <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${f.iconBg}`}>
                             <Icon size={16} />
                           </div>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                            isSelected ? "bg-brand text-white" : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {count} {count === 1 ? "Test" : "Tests"}
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                              isSelected ? "bg-brand text-white" : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {isSelected ? "Active" : "Practice"}
                           </span>
                         </div>
                         <h4 className="mt-3 font-bold text-sm text-ink flex items-center gap-1">
-                          {isSelected ? <FolderOpen size={14} className="text-brand" /> : <Folder size={14} className="text-slate-400" />}
+                          {isSelected ? (
+                            <FolderOpen size={14} className="text-brand" />
+                          ) : (
+                            <Folder size={14} className="text-slate-400" />
+                          )}
                           {f.shortName}
                         </h4>
                         <p className="mt-1 text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
@@ -565,8 +584,8 @@ function TestsCatalogContent() {
                       </div>
 
                       <div className="mt-3 pt-2 border-t border-slate-100/80 flex items-center justify-between text-[11px] font-semibold">
-                        <span className={isSelected ? "text-brand" : "text-slate-400"}>
-                          {isSelected ? "Active Folder" : "Open Folder"}
+                        <span className={isSelected ? "text-brand font-bold" : "text-slate-400"}>
+                          {isSelected ? "Filtered View" : "Browse Tests"}
                         </span>
                         <ChevronRight size={13} className={isSelected ? "text-brand" : "text-slate-400"} />
                       </div>
@@ -582,7 +601,7 @@ function TestsCatalogContent() {
                 {/* Folder Pills */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-xs font-bold text-slate-500 mr-1 inline-flex items-center gap-1">
-                    <Layers size={13} /> Subpart:
+                    <Layers size={13} /> Domain:
                   </span>
                   <button
                     onClick={() => handleSelectFolder("ALL")}
@@ -592,15 +611,11 @@ function TestsCatalogContent() {
                         : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-ink"
                     }`}
                   >
-                    <span>All Folders</span>
-                    <span className={`text-[10px] rounded-full px-1.5 py-0.2 ${selectedFolder === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
-                      {catalogTests.length}
-                    </span>
+                    <span>All Domains</span>
                   </button>
 
                   {FOLDERS.map((f) => {
                     const isSelected = selectedFolder === f.key;
-                    const count = catalogTests.filter((t) => testMatchesFolder(t, f.key)).length;
                     const Icon = f.icon;
 
                     return (
@@ -615,9 +630,6 @@ function TestsCatalogContent() {
                       >
                         <Icon size={12} className={isSelected ? "text-white" : "text-slate-400"} />
                         <span>{f.shortName}</span>
-                        <span className={`text-[10px] rounded-full px-1.5 py-0.2 ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
-                          {count}
-                        </span>
                       </button>
                     );
                   })}
@@ -630,14 +642,6 @@ function TestsCatalogContent() {
                   </span>
                   {difficulties.map((d) => {
                     const isSelected = selectedDifficulty === d.key;
-                    const count =
-                      d.key === "ALL"
-                        ? catalogTests.filter((t) => testMatchesFolder(t, selectedFolder)).length
-                        : catalogTests.filter(
-                            (t) =>
-                              testMatchesFolder(t, selectedFolder) &&
-                              (t.difficulty || "MEDIUM").toUpperCase() === d.key
-                          ).length;
 
                     return (
                       <button
@@ -650,13 +654,6 @@ function TestsCatalogContent() {
                         }`}
                       >
                         <span>{d.label}</span>
-                        <span
-                          className={`ml-0.5 rounded-full px-1.5 py-0.2 text-[10px] ${
-                            isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {count}
-                        </span>
                       </button>
                     );
                   })}

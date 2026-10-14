@@ -227,6 +227,23 @@ export async function startTest(testId: string): Promise<StartAttemptResponse> {
   });
 }
 
+export interface TopicTestStartPayload {
+  category_id?: string | null;
+  topic_id?: string | null;
+  difficulty?: string | null;
+  question_count?: number;
+  duration_seconds?: number;
+  test_name?: string | null;
+}
+
+export async function startTopicTest(payload: TopicTestStartPayload): Promise<StartAttemptResponse> {
+  return request<StartAttemptResponse>("/tests/topic/start", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+
 export async function saveAnswer(
   attemptId: string,
   questionId: string,

@@ -173,3 +173,13 @@ class FreeTestInfoResponse(BaseModel):
     has_completed_free_test: bool = False
     last_attempt_id: UUID | None = None
     last_guest_token: str | None = None
+
+
+class TopicTestStartRequest(BaseModel):
+    category_id: UUID | None = None
+    topic_id: UUID | None = None
+    difficulty: Difficulty | None = None
+    question_count: int = Field(default=20, ge=5, le=50)
+    duration_seconds: int = Field(default=1200, ge=300, le=7200)
+    test_name: str | None = None
+

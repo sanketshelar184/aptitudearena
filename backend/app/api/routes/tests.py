@@ -24,6 +24,7 @@ from app.schemas.test_engine import (
     TestCreate,
     TestQuestionPublic,
     TestRead,
+    TopicTestStartRequest,
 )
 from app.services.commerce import check_user_test_access, consume_user_test_access
 from app.services.test_engine import (
@@ -397,6 +398,116 @@ def start_test(
         db,
         test_id,
         user_id=user.id if user else None,
+        guest_session_token=guest_token,
+    )
+
+    return StartAttemptResponse(
+        attempt_id=attempt.id,
+        test_id=test.id,
+        test_name=test.name,
+        guest_token=token,
+        expires_at=attempt.expires_at,
+        duration_seconds=test.duration_seconds,
+        total_questions=attempt.total_questions,
+        questions=[make_public_question(q, idx) for idx, q in enumerate(questions, start=1)],
+    )
+
+
+@router.post("/tests/topic/start", response_model=StartAttemptResponse, status_code=status.HTTP_201_CREATED)
+def start_topic_test(
+    payload: TopicTestStartRequest,
+    response: Response,
+    guest_info: tuple[str, bool] = Depends(get_or_create_guest_token),
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> StartAttemptResponse:
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Please log in to generate and take topic tests.",
+        )
+
+    category = db.get(Category, payload.category_id) if payload.category_id else None
+    topic = db.get(Topic, payload.topic_id) if payload.topic_id else None
+
+    if payload.topic_id and not topic:
+        raise HTTPException(status_code=404, detail="Selected topic not found")
+    if payload.category_id and not category:
+        raise HTTPException(status_code=404, detail="Selected category not found")
+
+    diff_label = f" ({payload.difficulty.value.title()})" if payload.difficulty else ""
+    if topic:
+        base_name = f"{topic.name} Topic Sprint{diff_label}"
+        cat_id = topic.category_id
+        top_id = topic.id
+    elif category:
+        base_name = f"{category.name} Practice Sprint{diff_label}"
+        cat_id = category.id
+        top_id = None
+    else:
+        base_name = f"General Aptitude Practice Sprint{diff_label}"
+        cat_id = None
+        top_id = None
+
+    test = db.scalar(
+        select(Test).where(
+            Test.category_id == cat_id,
+            Test.topic_id == top_id,
+            Test.difficulty == payload.difficulty,
+            Test.question_count == payload.question_count,
+            Test.status == TestStatus.PUBLISHED,
+        )
+    )
+
+    if not test:
+        test = Test(
+            name=payload.test_name or base_name,
+            description=f"Automated timed topic assessment for {topic.name if topic else (category.name if category else 'General Aptitude')} with adaptive questions.",
+            category_id=cat_id,
+            topic_id=top_id,
+            difficulty=payload.difficulty,
+            question_count=payload.question_count,
+            duration_seconds=payload.duration_seconds,
+            is_free=False,
+            is_premium=True,
+            price_inr=10,
+            status=TestStatus.PUBLISHED,
+        )
+        db.add(test)
+        try:
+            db.commit()
+            db.refresh(test)
+        except Exception:
+            db.rollback()
+            test.name = f"{base_name} - {secrets.token_hex(3)}"
+            db.add(test)
+            db.commit()
+            db.refresh(test)
+
+    # Check access / pass deduction
+    if user.role != UserRole.ADMIN:
+        has_access, _ = check_user_test_access(db, user, test)
+        if not has_access:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Payment required. Please purchase a test pass or subscribe to Pro to start topic tests.",
+            )
+        consume_user_test_access(db, user, test)
+
+    guest_token, is_new = guest_info
+    if is_new:
+        response.set_cookie(
+            key="aa_guest_session",
+            value=guest_token,
+            max_age=86400 * 60,
+            httponly=True,
+            samesite="lax",
+        )
+
+    attempt, token, questions = start_guest_attempt(
+        db,
+        test.id,
+        user_id=user.id,
         guest_session_token=guest_token,
     )
 

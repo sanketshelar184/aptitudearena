@@ -117,11 +117,20 @@ def selected_questions(
         needed = test.question_count - len(selected_pool)
         if len(seen_candidates) < needed:
             if not eligible:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Not enough eligible questions available for this topic test.",
-                )
+                cat_query = select(Question).where(*base_filter, Question.category_id == test.category_id)
+                eligible = list(db.scalars(cat_query).all())
+                if not eligible:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Not enough eligible questions available for this topic test.",
+                    )
             selected_pool.extend(seen_candidates)
+            if len(selected_pool) < test.question_count and test.category_id:
+                more_cat = [
+                    q for q in db.scalars(select(Question).where(*base_filter, Question.category_id == test.category_id)).all()
+                    if q.id not in {x.id for x in selected_pool}
+                ]
+                selected_pool.extend(more_cat[: test.question_count - len(selected_pool)])
             random.shuffle(selected_pool)
             return _unique_by_stem(selected_pool)[: test.question_count]
         selected_pool.extend(random.sample(seen_candidates, needed))
