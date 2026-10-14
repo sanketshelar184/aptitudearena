@@ -20,6 +20,7 @@ import { Category, Topic } from "@/types/admin";
 import { MembershipStatus } from "@/types/commerce";
 import { getCategories, getTopics, startTopicTest } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import StartTestConfirmModal, { ConfirmTestDetails } from "@/components/StartTestConfirmModal";
 
 interface TopicTestGeneratorProps {
   membership: MembershipStatus | null;
@@ -39,6 +40,7 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
   const [questionCount, setQuestionCount] = useState<number>(20);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     Promise.all([getCategories(), getTopics()])
@@ -71,7 +73,7 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
     setError(null);
   };
 
-  const handleStartTest = async () => {
+  const handleOpenConfirm = () => {
     setError(null);
 
     if (!getToken()) {
@@ -79,6 +81,11 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmStart = async () => {
+    setError(null);
     setIsStarting(true);
     try {
       const durationSeconds = questionCount === 10 ? 600 : 1200; // 10m or 20m
@@ -102,6 +109,30 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
       setIsStarting(false);
     }
   };
+
+  const selectedCategory = useMemo(() => {
+    return categories.find((c) => c.id === selectedCategoryId) || null;
+  }, [categories, selectedCategoryId]);
+
+  const selectedTopic = useMemo(() => {
+    return topics.find((t) => t.id === selectedTopicId) || null;
+  }, [topics, selectedTopicId]);
+
+  const confirmDetails: ConfirmTestDetails = useMemo(() => {
+    return {
+      title: selectedTopic
+        ? `${selectedTopic.name} Topic Sprint`
+        : `${selectedCategory?.name || "General Aptitude"} Practice Sprint`,
+      categoryName: selectedCategory?.name || "General Aptitude",
+      topicName: selectedTopic ? selectedTopic.name : "All Topics in Domain (Mixed)",
+      difficulty: difficulty,
+      questionCount: questionCount,
+      durationSeconds: questionCount === 10 ? 600 : 1200,
+      negativeMarkingRatio: 0,
+      priceInr: 10,
+      isFree: false,
+    };
+  }, [selectedCategory, selectedTopic, difficulty, questionCount]);
 
   const isAdmin = membership?.role === "ADMIN";
   const isPro = membership?.is_subscribed;
@@ -329,7 +360,7 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
 
           <button
             type="button"
-            onClick={handleStartTest}
+            onClick={handleOpenConfirm}
             disabled={isStarting}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-600 to-indigo-700 hover:from-blue-600 hover:to-indigo-800 text-white px-7 py-3 text-sm font-black shadow-lg hover:shadow-indigo-500/25 active:scale-98 transition-all disabled:opacity-50"
           >
@@ -347,6 +378,17 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
           </button>
         </div>
       </div>
+
+      {/* Pre-Test Confirmation & Instructions Modal */}
+      <StartTestConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmStart}
+        isStarting={isStarting}
+        testDetails={confirmDetails}
+        membership={membership}
+        error={error}
+      />
     </div>
   );
 }

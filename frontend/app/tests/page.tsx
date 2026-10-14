@@ -30,6 +30,7 @@ import { Test } from "@/types/test";
 import { MembershipStatus } from "@/types/commerce";
 import Navbar from "@/components/Navbar";
 import TopicTestGenerator from "@/components/TopicTestGenerator";
+import StartTestConfirmModal, { ConfirmTestDetails } from "@/components/StartTestConfirmModal";
 
 
 interface FolderDefinition {
@@ -177,6 +178,8 @@ function TestsCatalogContent() {
   const [selectedFolder, setSelectedFolder] = useState<string>(initialFolder);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("ALL");
   const [companySubFilter, setCompanySubFilter] = useState<string>("ALL");
+  const [confirmTest, setConfirmTest] = useState<Test | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   useEffect(() => {
     getPublishedTests()
@@ -193,15 +196,21 @@ function TestsCatalogContent() {
     }
   }, []);
 
-  const handleStartPaidTest = async (testId: string) => {
+  const handleOpenTestConfirm = (t: Test) => {
+    setConfirmError(null);
     if (!getToken()) {
       router.push(`/login?redirect=${encodeURIComponent("/tests")}`);
       return;
     }
+    setConfirmTest(t);
+  };
 
-    setStartingTestId(testId);
+  const handleExecuteStartTest = async () => {
+    if (!confirmTest) return;
+    setConfirmError(null);
+    setStartingTestId(confirmTest.id);
     try {
-      const started = await startTest(testId);
+      const started = await startTest(confirmTest.id);
       sessionStorage.setItem(`attempt_${started.attempt_id}_token`, started.guest_token);
       router.push(`/attempt/${started.attempt_id}`);
     } catch (err: unknown) {
@@ -209,11 +218,26 @@ function TestsCatalogContent() {
       if (msg.toLowerCase().includes("payment required") || msg.includes("402")) {
         router.push("/pricing");
       } else {
-        alert(msg);
+        setConfirmError(msg);
       }
       setStartingTestId(null);
     }
   };
+
+  const testConfirmDetails: ConfirmTestDetails | null = useMemo(() => {
+    if (!confirmTest) return null;
+    return {
+      title: confirmTest.name,
+      categoryName: confirmTest.category_name,
+      topicName: confirmTest.company_name ? `🏢 ${confirmTest.company_name}` : null,
+      difficulty: confirmTest.difficulty,
+      questionCount: confirmTest.question_count,
+      durationSeconds: confirmTest.duration_seconds,
+      negativeMarkingRatio: confirmTest.negative_marking_ratio,
+      priceInr: confirmTest.price_inr,
+      isFree: confirmTest.is_free,
+    };
+  }, [confirmTest]);
 
   const isAdmin = membership?.role === "ADMIN";
 
@@ -353,7 +377,7 @@ function TestsCatalogContent() {
             : "No negative marks"}
         </span>
         <button
-          onClick={() => handleStartPaidTest(t.id)}
+          onClick={() => handleOpenTestConfirm(t)}
           disabled={startingTestId === t.id}
           className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50 shadow-2xs ${
             isAdmin
@@ -813,6 +837,22 @@ function TestsCatalogContent() {
           </div>
         )}
       </div>
+
+      {/* Pre-Test Confirmation & Instructions Modal */}
+      <StartTestConfirmModal
+        isOpen={Boolean(confirmTest)}
+        onClose={() => {
+          if (!startingTestId) {
+            setConfirmTest(null);
+            setConfirmError(null);
+          }
+        }}
+        onConfirm={handleExecuteStartTest}
+        isStarting={Boolean(startingTestId)}
+        testDetails={testConfirmDetails}
+        membership={membership}
+        error={confirmError}
+      />
     </main>
   );
 }
