@@ -303,116 +303,7 @@ def start_or_resume_free_test(
     )
 
 
-@router.post("/tests/{test_id}/start", response_model=StartAttemptResponse, status_code=status.HTTP_201_CREATED)
-def start_test(
-    test_id: UUID,
-    response: Response,
-    guest_info: tuple[str, bool] = Depends(get_or_create_guest_token),
-    user: User | None = Depends(get_optional_user),
-    db: Session = Depends(get_db),
-) -> StartAttemptResponse:
-    test = db.get(Test, test_id)
-    if not test or test.status != TestStatus.PUBLISHED:
-        raise HTTPException(status_code=404, detail="Test not found")
-
-    guest_token, is_new = guest_info
-    if is_new:
-        response.set_cookie(
-            key="aa_guest_session",
-            value=guest_token,
-            max_age=86400 * 60,
-            httponly=True,
-            samesite="lax",
-        )
-
-    # Reconnection / Disconnection Recovery: Check for active in-progress attempt to resume
-    active_attempt = None
-    if user:
-        active_attempt = db.scalar(
-            select(TestAttempt)
-            .where(
-                TestAttempt.test_id == test.id,
-                TestAttempt.user_id == user.id,
-                TestAttempt.status == AttemptStatus.IN_PROGRESS,
-            )
-            .order_by(TestAttempt.created_at.desc())
-        )
-    else:
-        token_hash = hash_guest_token(guest_token)
-        active_attempt = db.scalar(
-            select(TestAttempt)
-            .where(
-                TestAttempt.test_id == test.id,
-                TestAttempt.guest_token_hash == token_hash,
-                TestAttempt.status == AttemptStatus.IN_PROGRESS,
-            )
-            .order_by(TestAttempt.created_at.desc())
-        )
-
-    if active_attempt and utc_now() < as_utc(active_attempt.expires_at):
-        # Resume existing active test without deducting any new pass
-        active_attempt.guest_token_hash = hash_guest_token(guest_token)
-        db.commit()
-
-        answers = list(
-            db.scalars(
-                select(TestAnswer)
-                .where(TestAnswer.attempt_id == active_attempt.id)
-                .order_by(TestAnswer.position)
-            ).all()
-        )
-        questions_map = {
-            q.id: q
-            for q in db.scalars(select(Question).where(Question.id.in_([a.question_id for a in answers]))).all()
-        }
-        ordered_items = [(a, questions_map[a.question_id]) for a in answers if a.question_id in questions_map]
-
-        return StartAttemptResponse(
-            attempt_id=active_attempt.id,
-            test_id=test.id,
-            test_name=test.name,
-            guest_token=guest_token,
-            expires_at=active_attempt.expires_at,
-            duration_seconds=test.duration_seconds,
-            total_questions=active_attempt.total_questions,
-            questions=[make_public_question(q, ans.position, ans.selected_answer) for ans, q in ordered_items],
-        )
-
-    if not test.is_free:
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Please log in to take premium placement tests.",
-            )
-        # Admin All-Access: admins can take any test for free
-        if user.role != UserRole.ADMIN:
-            has_access, _ = check_user_test_access(db, user, test)
-            if not has_access:
-                raise HTTPException(
-                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                    detail="Payment required. Please purchase a test pass or subscribe to Pro.",
-                )
-            consume_user_test_access(db, user, test)
-
-    attempt, token, questions = start_guest_attempt(
-        db,
-        test_id,
-        user_id=user.id if user else None,
-        guest_session_token=guest_token,
-    )
-
-    return StartAttemptResponse(
-        attempt_id=attempt.id,
-        test_id=test.id,
-        test_name=test.name,
-        guest_token=token,
-        expires_at=attempt.expires_at,
-        duration_seconds=test.duration_seconds,
-        total_questions=attempt.total_questions,
-        questions=[make_public_question(q, idx) for idx, q in enumerate(questions, start=1)],
-    )
-
-
+@router.post("/topic-tests/start", response_model=StartAttemptResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/tests/topic/start", response_model=StartAttemptResponse, status_code=status.HTTP_201_CREATED)
 def start_topic_test(
     payload: TopicTestStartRequest,
@@ -522,6 +413,115 @@ def start_topic_test(
         questions=[make_public_question(q, idx) for idx, q in enumerate(questions, start=1)],
     )
 
+
+@router.post("/tests/{test_id}/start", response_model=StartAttemptResponse, status_code=status.HTTP_201_CREATED)
+def start_test(
+    test_id: UUID,
+    response: Response,
+    guest_info: tuple[str, bool] = Depends(get_or_create_guest_token),
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> StartAttemptResponse:
+    test = db.get(Test, test_id)
+    if not test or test.status != TestStatus.PUBLISHED:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    guest_token, is_new = guest_info
+    if is_new:
+        response.set_cookie(
+            key="aa_guest_session",
+            value=guest_token,
+            max_age=86400 * 60,
+            httponly=True,
+            samesite="lax",
+        )
+
+    # Reconnection / Disconnection Recovery: Check for active in-progress attempt to resume
+    active_attempt = None
+    if user:
+        active_attempt = db.scalar(
+            select(TestAttempt)
+            .where(
+                TestAttempt.test_id == test.id,
+                TestAttempt.user_id == user.id,
+                TestAttempt.status == AttemptStatus.IN_PROGRESS,
+            )
+            .order_by(TestAttempt.created_at.desc())
+        )
+    else:
+        token_hash = hash_guest_token(guest_token)
+        active_attempt = db.scalar(
+            select(TestAttempt)
+            .where(
+                TestAttempt.test_id == test.id,
+                TestAttempt.guest_token_hash == token_hash,
+                TestAttempt.status == AttemptStatus.IN_PROGRESS,
+            )
+            .order_by(TestAttempt.created_at.desc())
+        )
+
+    if active_attempt and utc_now() < as_utc(active_attempt.expires_at):
+        # Resume existing active test without deducting any new pass
+        active_attempt.guest_token_hash = hash_guest_token(guest_token)
+        db.commit()
+
+        answers = list(
+            db.scalars(
+                select(TestAnswer)
+                .where(TestAnswer.attempt_id == active_attempt.id)
+                .order_by(TestAnswer.position)
+            ).all()
+        )
+        questions_map = {
+            q.id: q
+            for q in db.scalars(select(Question).where(Question.id.in_([a.question_id for a in answers]))).all()
+        }
+        ordered_items = [(a, questions_map[a.question_id]) for a in answers if a.question_id in questions_map]
+
+        return StartAttemptResponse(
+            attempt_id=active_attempt.id,
+            test_id=test.id,
+            test_name=test.name,
+            guest_token=guest_token,
+            expires_at=active_attempt.expires_at,
+            duration_seconds=test.duration_seconds,
+            total_questions=active_attempt.total_questions,
+            questions=[make_public_question(q, ans.position, ans.selected_answer) for ans, q in ordered_items],
+        )
+
+    if not test.is_free:
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Please log in to take premium placement tests.",
+            )
+        # Admin All-Access: admins can take any test for free
+        if user.role != UserRole.ADMIN:
+            has_access, _ = check_user_test_access(db, user, test)
+            if not has_access:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail="Payment required. Please purchase a test pass or subscribe to Pro.",
+                )
+            consume_user_test_access(db, user, test)
+
+    attempt, token, questions = start_guest_attempt(
+        db,
+        test_id,
+        user_id=user.id if user else None,
+        guest_session_token=guest_token,
+    )
+
+    return StartAttemptResponse(
+        attempt_id=attempt.id,
+        test_id=test.id,
+        test_name=test.name,
+        guest_token=token,
+        expires_at=attempt.expires_at,
+        duration_seconds=test.duration_seconds,
+        total_questions=attempt.total_questions,
+        questions=[make_public_question(q, idx) for idx, q in enumerate(questions, start=1)],
+    )
 
 @router.put("/attempts/{attempt_id}/answers/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
 def save_answer(

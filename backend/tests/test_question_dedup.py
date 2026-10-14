@@ -110,8 +110,9 @@ def test_student_never_receives_duplicate_questions(dedup_client: tuple[TestClie
 
     # Submit attempt 1
     client.post(
-        f"/api/v1/tests/attempts/{att1['attempt_id']}/submit",
-        headers={"X-Guest-Token": att1["guest_token"], **headers_student},
+        f"/api/v1/attempts/{att1['attempt_id']}/submit",
+        json={"guest_token": att1["guest_token"]},
+        headers=headers_student,
     )
 
     # 4. Student starts Attempt 2 for the same test

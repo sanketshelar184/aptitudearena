@@ -237,7 +237,7 @@ export interface TopicTestStartPayload {
 }
 
 export async function startTopicTest(payload: TopicTestStartPayload): Promise<StartAttemptResponse> {
-  return request<StartAttemptResponse>("/tests/topic/start", {
+  return request<StartAttemptResponse>("/topic-tests/start", {
     method: "POST",
     body: JSON.stringify(payload),
   });
