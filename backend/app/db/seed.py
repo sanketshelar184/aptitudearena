@@ -587,9 +587,9 @@ DEFAULT_TESTS = [
     },
     {
         "name": "Quantitative Aptitude Speed Test",
-        "description": "10 timed questions focused on arithmetic, percentages, ratios, and time-work to build fast calculation reflexes under placement pressure.",
-        "question_count": 10,
-        "duration_seconds": 600,  # 10 mins
+        "description": "20 timed questions focused on arithmetic, percentages, ratios, and time-work to build fast calculation reflexes under placement pressure.",
+        "question_count": 20,
+        "duration_seconds": 1200,  # 20 mins
         "category_name": "Quantitative Aptitude",
         "topic_name": None,
         "difficulty": Difficulty.MEDIUM,
@@ -601,9 +601,9 @@ DEFAULT_TESTS = [
     },
     {
         "name": "Logical Reasoning Placement Sprint",
-        "description": "10 questions evaluating number series, pattern coding, direction sense, and critical deductive puzzles commonly asked in Tier-1 IT placement drives.",
-        "question_count": 10,
-        "duration_seconds": 600,  # 10 mins
+        "description": "20 questions evaluating number series, pattern coding, direction sense, and critical deductive puzzles commonly asked in Tier-1 IT placement drives.",
+        "question_count": 20,
+        "duration_seconds": 1200,  # 20 mins
         "category_name": "Logical Reasoning",
         "topic_name": None,
         "difficulty": Difficulty.MEDIUM,
@@ -615,9 +615,9 @@ DEFAULT_TESTS = [
     },
     {
         "name": "Verbal Ability Placement Assessment",
-        "description": "10 questions testing grammar precision, sentence correction, synonyms, and error detection essential for clearing verbal cutoffs in placement tests.",
-        "question_count": 10,
-        "duration_seconds": 600,  # 10 mins
+        "description": "20 questions testing grammar precision, sentence correction, synonyms, and error detection essential for clearing verbal cutoffs in placement tests.",
+        "question_count": 20,
+        "duration_seconds": 1200,  # 20 mins
         "category_name": "Verbal Ability",
         "topic_name": None,
         "difficulty": Difficulty.MEDIUM,
@@ -630,8 +630,8 @@ DEFAULT_TESTS = [
     {
         "name": "Technical CS/IT Foundations - Easy",
         "description": "Essential campus placement questions covering C language syntax, variable scoping, pointers, and function returns.",
-        "question_count": 10,
-        "duration_seconds": 600,
+        "question_count": 20,
+        "duration_seconds": 1200,
         "category_name": "Technical CS/IT",
         "topic_name": None,
         "difficulty": Difficulty.EASY,
@@ -644,8 +644,8 @@ DEFAULT_TESTS = [
     {
         "name": "TCS Technical C/C++ & OOPs Challenge",
         "description": "Core technical test evaluating C/C++ pointers, compound statements, memory allocation, and object-oriented paradigms.",
-        "question_count": 10,
-        "duration_seconds": 600,
+        "question_count": 20,
+        "duration_seconds": 1200,
         "category_name": "Technical CS/IT",
         "topic_name": None,
         "difficulty": Difficulty.MEDIUM,

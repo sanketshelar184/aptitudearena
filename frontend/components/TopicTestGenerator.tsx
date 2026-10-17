@@ -37,10 +37,12 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [selectedTopicId, setSelectedTopicId] = useState<string>("");
   const [difficulty, setDifficulty] = useState<"EASY" | "MEDIUM" | "HARD">("MEDIUM");
-  const [questionCount, setQuestionCount] = useState<number>(20);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const QUESTION_COUNT = 20;
+  const DURATION_SECONDS = 1200; // 20 mins placement standard
 
   useEffect(() => {
     Promise.all([getCategories(), getTopics()])
@@ -88,13 +90,12 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
     setError(null);
     setIsStarting(true);
     try {
-      const durationSeconds = questionCount === 10 ? 600 : 1200; // 10m or 20m
       const started = await startTopicTest({
         category_id: selectedCategoryId || null,
         topic_id: selectedTopicId || null,
         difficulty: difficulty,
-        question_count: questionCount,
-        duration_seconds: durationSeconds,
+        question_count: QUESTION_COUNT,
+        duration_seconds: DURATION_SECONDS,
       });
 
       sessionStorage.setItem(`attempt_${started.attempt_id}_token`, started.guest_token);
@@ -126,13 +127,13 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
       categoryName: selectedCategory?.name || "General Aptitude",
       topicName: selectedTopic ? selectedTopic.name : "All Topics in Domain (Mixed)",
       difficulty: difficulty,
-      questionCount: questionCount,
-      durationSeconds: questionCount === 10 ? 600 : 1200,
+      questionCount: QUESTION_COUNT,
+      durationSeconds: DURATION_SECONDS,
       negativeMarkingRatio: 0,
       priceInr: 10,
       isFree: false,
     };
-  }, [selectedCategory, selectedTopic, difficulty, questionCount]);
+  }, [selectedCategory, selectedTopic, difficulty]);
 
   const isAdmin = membership?.role === "ADMIN";
   const isPro = membership?.is_subscribed;
@@ -314,36 +315,14 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
               <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
                 4. Test Format
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setQuestionCount(20)}
-                  className={`p-2.5 rounded-xl border text-left transition ${
-                    questionCount === 20
-                      ? "bg-white text-slate-900 border-white font-bold shadow-md"
-                      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                  }`}
-                >
-                  <div className="text-xs font-extrabold">20 Questions</div>
-                  <div className={`text-[10px] ${questionCount === 20 ? "text-slate-600" : "text-slate-400"}`}>
-                    20 Mins Standard
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setQuestionCount(10)}
-                  className={`p-2.5 rounded-xl border text-left transition ${
-                    questionCount === 10
-                      ? "bg-white text-slate-900 border-white font-bold shadow-md"
-                      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                  }`}
-                >
-                  <div className="text-xs font-extrabold">10 Questions</div>
-                  <div className={`text-[10px] ${questionCount === 10 ? "text-slate-600" : "text-slate-400"}`}>
-                    10 Mins Quick Drill
-                  </div>
-                </button>
+              <div className="p-3 rounded-xl border border-white/10 bg-white/5 text-slate-300 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-extrabold text-white">20 Questions</div>
+                  <div className="text-[10px] text-slate-400">20 Mins Placement Standard</div>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-2.5 py-1 rounded-lg border border-indigo-400/30">
+                  Standard
+                </span>
               </div>
             </div>
           </div>
