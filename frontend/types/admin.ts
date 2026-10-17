@@ -35,6 +35,7 @@ export interface Topic {
   category_id: string;
   name: string;
   slug: string;
+  question_count?: number;
   created_at?: string;
 }
 

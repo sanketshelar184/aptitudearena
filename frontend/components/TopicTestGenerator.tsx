@@ -250,19 +250,40 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
 
               {filteredTopics.map((top) => {
                 const isSelected = selectedTopicId === top.id;
+                const count = top.question_count ?? 0;
+                const isAvailable = count >= 5;
+
                 return (
                   <button
                     key={top.id}
                     type="button"
-                    onClick={() => setSelectedTopicId(top.id)}
+                    onClick={() => {
+                      if (isAvailable) setSelectedTopicId(top.id);
+                    }}
+                    disabled={!isAvailable}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition flex items-center justify-between ${
-                      isSelected
+                      !isAvailable
+                        ? "opacity-50 cursor-not-allowed text-slate-500 hover:bg-transparent"
+                        : isSelected
                         ? "bg-indigo-600 text-white font-bold"
                         : "text-slate-300 hover:bg-white/10 hover:text-white"
                     }`}
                   >
                     <span className="truncate">{top.name}</span>
-                    {isSelected && <CheckCircle2 size={13} className="text-white shrink-0 ml-1" />}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                          isSelected
+                            ? "bg-indigo-700/80 text-white font-bold"
+                            : isAvailable
+                            ? "bg-white/10 text-slate-400"
+                            : "bg-amber-500/15 text-amber-300"
+                        }`}
+                      >
+                        {isAvailable ? `${count} Qs` : "Coming Soon"}
+                      </span>
+                      {isSelected && <CheckCircle2 size={13} className="text-white shrink-0" />}
+                    </div>
                   </button>
                 );
               })}

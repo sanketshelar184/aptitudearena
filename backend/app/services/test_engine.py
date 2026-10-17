@@ -107,35 +107,34 @@ def selected_questions(
             eligible = list(db.scalars(query).all())
         eligible = _unique_by_stem(eligible)
 
+        if not eligible:
+            raise HTTPException(
+                status_code=409,
+                detail="No questions are currently available for this topic. Please select another topic.",
+            )
+
         unseen = [q for q in eligible if q.id not in exclude]
         if len(unseen) >= test.question_count:
             return random.sample(unseen, test.question_count)
 
-        # If unseen questions are fewer than required, take all unseen first, then fill remainder
+        # If unseen questions are fewer than required, take all unseen first, then fill remainder strictly from this topic
         selected_pool = list(unseen)
         seen_candidates = [q for q in eligible if q.id in exclude and q.id not in {x.id for x in selected_pool}]
         needed = test.question_count - len(selected_pool)
-        if len(seen_candidates) < needed:
-            if not eligible:
-                cat_query = select(Question).where(*base_filter, Question.category_id == test.category_id)
-                eligible = list(db.scalars(cat_query).all())
-                if not eligible:
-                    raise HTTPException(
-                        status_code=409,
-                        detail="Not enough eligible questions available for this topic test.",
-                    )
+
+        if len(seen_candidates) >= needed:
+            selected_pool.extend(random.sample(seen_candidates, needed))
+        else:
             selected_pool.extend(seen_candidates)
-            if len(selected_pool) < test.question_count and test.category_id:
-                more_cat = [
-                    q for q in db.scalars(select(Question).where(*base_filter, Question.category_id == test.category_id)).all()
-                    if q.id not in {x.id for x in selected_pool}
-                ]
-                selected_pool.extend(more_cat[: test.question_count - len(selected_pool)])
-            random.shuffle(selected_pool)
-            return _unique_by_stem(selected_pool)[: test.question_count]
-        selected_pool.extend(random.sample(seen_candidates, needed))
+            # Re-sample strictly from the SAME topic so other topics never pollute this test
+            remaining_needed = test.question_count - len(selected_pool)
+            while remaining_needed > 0:
+                batch = random.sample(eligible, min(len(eligible), remaining_needed))
+                selected_pool.extend(batch)
+                remaining_needed -= len(batch)
+
         random.shuffle(selected_pool)
-        return _unique_by_stem(selected_pool)[: test.question_count]
+        return selected_pool[: test.question_count]
 
     # Case B: Category Test
     if test.category_id:

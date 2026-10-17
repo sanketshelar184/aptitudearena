@@ -23,6 +23,7 @@ class TopicCreate(CategoryCreate):
 class TopicRead(TopicCreate):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
+    question_count: int = 0
 
 
 class QuestionInput(BaseModel):
