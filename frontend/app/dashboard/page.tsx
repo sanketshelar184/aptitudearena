@@ -399,7 +399,7 @@ function DashboardContent() {
               </div>
             </div>
             <a
-              href="https://t.me/+u4yA-5lKgFhmMTk1"
+              href="https://t.me/apt_arena"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-[#0088cc] shadow-md hover:bg-sky-50 active:scale-95 transition-all"

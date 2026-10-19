@@ -80,7 +80,7 @@ export default function Navbar({ variant = "default" }: NavbarProps): React.JSX.
           </Link>
 
           <a
-            href="https://t.me/+u4yA-5lKgFhmMTk1"
+            href="https://t.me/apt_arena"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-[#0088cc] hover:bg-sky-100 transition border border-sky-200/60"

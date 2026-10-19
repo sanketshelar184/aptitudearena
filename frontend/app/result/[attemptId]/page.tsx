@@ -527,7 +527,7 @@ function ResultPageContent() {
               </div>
             </div>
             <a
-              href="https://t.me/+u4yA-5lKgFhmMTk1"
+              href="https://t.me/apt_arena"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2AABEE] to-[#0088cc] hover:from-[#229ED9] hover:to-[#0077b5] px-4 py-2.5 text-xs font-bold text-white shadow-xs active:scale-95 transition-all"

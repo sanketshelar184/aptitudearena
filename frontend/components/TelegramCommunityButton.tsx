@@ -13,7 +13,7 @@ export default function TelegramCommunityButton() {
     return null;
   }
 
-  const telegramLink = "https://t.me/+u4yA-5lKgFhmMTk1";
+  const telegramLink = "https://t.me/apt_arena";
 
   return (
     <aside

@@ -409,7 +409,7 @@ export default function LandingPage() {
             <Link href="/tests" className="hover:text-ink">Browse Tests</Link>
             <Link href="/pricing" className="hover:text-ink">Pricing</Link>
             <a
-              href="https://t.me/+u4yA-5lKgFhmMTk1"
+              href="https://t.me/apt_arena"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#0088cc] font-semibold text-[#0088cc] flex items-center gap-1"
