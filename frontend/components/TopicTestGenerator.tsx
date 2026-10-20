@@ -19,7 +19,7 @@ import {
 import { Category, Topic } from "@/types/admin";
 import { MembershipStatus } from "@/types/commerce";
 import { getCategories, getTopics, startTopicTest } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getToken, isAdmin as checkIsAdmin } from "@/lib/auth";
 import StartTestConfirmModal, { ConfirmTestDetails } from "@/components/StartTestConfirmModal";
 
 interface TopicTestGeneratorProps {
@@ -44,6 +44,8 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
   const QUESTION_COUNT = 20;
   const DURATION_SECONDS = 1200; // 20 mins placement standard
 
+  const isAdminUser = Boolean(membership?.role === "ADMIN" || checkIsAdmin());
+
   useEffect(() => {
     Promise.all([getCategories(), getTopics()])
       .then(([cats, tops]) => {
@@ -63,11 +65,15 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
       });
   }, []);
 
-  // Filter topics based on selected category
-  const filteredTopics = useMemo(() => {
+  // Filter topics based on selected category and user role
+  const displayedTopics = useMemo(() => {
     if (!selectedCategoryId) return [];
-    return topics.filter((t) => t.category_id === selectedCategoryId);
-  }, [topics, selectedCategoryId]);
+    const catTopics = topics.filter((t) => t.category_id === selectedCategoryId);
+    // Administrators see all topics (including Coming Soon inventory)
+    if (isAdminUser) return catTopics;
+    // Students only see active/available topics with enough questions
+    return catTopics.filter((t) => (t.question_count ?? 0) >= 5);
+  }, [topics, selectedCategoryId, isAdminUser]);
 
   const handleCategorySelect = (catId: string) => {
     setSelectedCategoryId(catId);
@@ -135,7 +141,7 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
     };
   }, [selectedCategory, selectedTopic, difficulty]);
 
-  const isAdmin = membership?.role === "ADMIN";
+  const isAdmin = isAdminUser;
   const isPro = membership?.is_subscribed;
   const hasPasses = (membership?.available_test_credits ?? 0) > 0;
 
@@ -248,7 +254,7 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
                 {selectedTopicId === "" && <CheckCircle2 size={13} className="text-white" />}
               </button>
 
-              {filteredTopics.map((top) => {
+              {displayedTopics.map((top) => {
                 const isSelected = selectedTopicId === top.id;
                 const count = top.question_count ?? 0;
                 const isAvailable = count >= 5;
@@ -258,11 +264,11 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
                     key={top.id}
                     type="button"
                     onClick={() => {
-                      if (isAvailable) setSelectedTopicId(top.id);
+                      if (isAvailable || isAdminUser) setSelectedTopicId(top.id);
                     }}
-                    disabled={!isAvailable}
+                    disabled={!isAvailable && !isAdminUser}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition flex items-center justify-between ${
-                      !isAvailable
+                      !isAvailable && !isAdminUser
                         ? "opacity-50 cursor-not-allowed text-slate-500 hover:bg-transparent"
                         : isSelected
                         ? "bg-indigo-600 text-white font-bold"
@@ -271,24 +277,27 @@ export default function TopicTestGenerator({ membership }: TopicTestGeneratorPro
                   >
                     <span className="truncate">{top.name}</span>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                          isSelected
-                            ? "bg-indigo-700/80 text-white font-bold"
-                            : isAvailable
-                            ? "bg-white/10 text-slate-400"
-                            : "bg-amber-500/15 text-amber-300"
-                        }`}
-                      >
-                        {isAvailable ? `${count} Qs` : "Coming Soon"}
-                      </span>
+                      {/* Show question count and Coming Soon badge ONLY to administrator */}
+                      {isAdminUser && (
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                            isSelected
+                              ? "bg-indigo-700/80 text-white font-bold"
+                              : isAvailable
+                              ? "bg-white/10 text-slate-400"
+                              : "bg-amber-500/15 text-amber-300"
+                          }`}
+                        >
+                          {isAvailable ? `${count} Qs` : "Coming Soon"}
+                        </span>
+                      )}
                       {isSelected && <CheckCircle2 size={13} className="text-white shrink-0" />}
                     </div>
                   </button>
                 );
               })}
 
-              {filteredTopics.length === 0 && !isLoadingTaxonomy && (
+              {displayedTopics.length === 0 && !isLoadingTaxonomy && (
                 <p className="p-3 text-center text-xs text-slate-400">
                   Select a domain to see its topics.
                 </p>

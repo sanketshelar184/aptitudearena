@@ -126,13 +126,9 @@ def selected_questions(
             selected_pool.extend(random.sample(seen_candidates, needed))
         else:
             selected_pool.extend(seen_candidates)
-            # Re-sample strictly from the SAME topic so other topics never pollute this test
-            remaining_needed = test.question_count - len(selected_pool)
-            while remaining_needed > 0:
-                batch = random.sample(eligible, min(len(eligible), remaining_needed))
-                selected_pool.extend(batch)
-                remaining_needed -= len(batch)
 
+        # Ensure all questions in topic test are strictly unique to respect database constraints
+        selected_pool = _unique_by_stem(selected_pool)
         random.shuffle(selected_pool)
         return selected_pool[: test.question_count]
 
